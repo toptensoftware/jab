@@ -1,5 +1,5 @@
 <?php
-jabRequire("forms");
+jabRequire("forms;captcha");
 $article=$model['article'];
 $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/rss+xml\" title=\"Get RSS 2.0 Feed\" href=\"".blog_link("/feed.rss")."\" />\n";
 ?>

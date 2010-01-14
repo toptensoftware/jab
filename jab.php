@@ -39,7 +39,7 @@ class jabPhpException extends Exception
 function jabErrorHandler ($errno, $errstr, $errfile, $errline, $errcontext)
 {
 	// Don't care about notices
-	if ($errno==E_NOTICE || $errno==E_USER_NOTICE )
+	if ($errno==E_NOTICE || $errno==E_USER_NOTICE || error_reporting()==0)
 		return false;
 
 	// Throw it
@@ -195,7 +195,151 @@ function jabEditLink($label, $localfile)
 	echo "<a href=\"".$url."\">".$label."</a>";
 }
 
+// Remove "." and ".." and "//" from a path
+function jabCanonicalizePath($path)
+{
+	$prefix="";
+	$suffix="";
+	
+	// Remove leading /
+	if ($path[0]=="/")
+	{
+		// Relative to root
+		$path=substr($path, 1);
+		$prefix="/";
+	}
+	
+	// Remove trailing /
+	if (substr($path, -1)=="/")
+	{
+		$path=substr($path, 0, -1);
+		$suffix="/";
+	}
+	
+	
+	// Go through handling ".." and "."
+	$parts=explode("/", $path);
+	for ($i=0; $i<sizeof($parts); $i++)
+	{
+		if ($parts[$i]=="." || $parts[$i]=="")
+		{
+			unset($parts[$i]);
+			$parts=array_values($parts);
+			$i--;
+		}		
+		else if ($parts[$i]=="..")
+		{
+			unset($parts[$i]);
+			if ($i>=1)
+				unset($parts[$i-1]);
+			$parts=array_values($parts);
+			$i--;
+		}
+	}
+	
+	// Rejoin
+	return $prefix.implode("/", $parts).$suffix;
+}
 
+// Qualify a local url relative to the document root
+function jabQualifyLocalUrl($url)
+{
+	// Remove leading protocol
+	$protopos=strpos($url, "://");
+	if ($protopos!==false)
+	{
+		$url=substr($url, $protopos+3);
+
+		// Remove host name
+		if (substr($url, 0, strlen($_SERVER['HTTP_HOST']))==$_SERVER['HTTP_HOST'])
+		{
+			$url=substr($url, strlen($_SERVER['HTTP_HOST']));
+		}
+		else
+		{
+			// Not a local url
+			return false;
+		}
+
+	}
+	
+	if ($url[0]!="/")
+	{
+		// Get the request URL without query string
+		$requestUrl=$_SERVER['REQUEST_URI'];
+		$qpos=strpos($requestUrl, "?");
+		if ($qpos!==false)
+			$requestUrl=substr($requestUrl, 0, $qpos);
+			
+		// Relative to REQUEST_URI
+		if (substr($requestUrl, -1)=="/")
+		{
+			$url=$requestUrl.$url;
+		}
+		else
+		{
+			$bspos=strrpos($requestUrl, "/");
+			if ($bspos!==false)
+				$requestDir=substr($requestUrl, 0, $bspos);
+			else
+				$requestDir="";
+				
+			$url=$requestDir."/".$url;
+		}
+	}
+	
+	$qpos=strpos($url, "?");
+	if ($qpos===false)
+		return jabCanonicalizePath($url);
+	else
+		return jabCanonicalizePath(substr($url, 0, $qpos)).substr($url, $qpos);
+}
+
+// Convert a URL to a fully qualified url
+function jabQualifyUrl($url)
+{
+	if (strstr($url, "://")!==false)
+		return $url;
+	else
+		return "http://".$_SERVER['HTTP_HOST'].qualify_local_url($url);		
+}
+
+
+// Reverse route a url to a static file
+function jabUrlToFile($url)
+{
+	// Firstly, remove all query string stuff from the url
+	$qpos=strrpos($url, "?");
+	if ($qpos!==false)
+	{
+		$url=substr($url, 0, $qpos);
+	}
+	
+	// Qualify to a local url
+	$url=jabQualifyLocalUrl($url);
+	if ($url===false)
+		return "";
+
+	// Do we have a hook for this installed?
+	global $jab;
+	if ($jab['fn_url_to_file'])
+	{
+		$file=$jab['fn_url_to_file']($url);
+		if ($file)
+			return $file;
+	}
+	
+	// Look in the server document root
+	if ($url[0]=='/')
+	{
+		$file=$_SERVER['DOCUMENT_ROOT'].$url;
+		if (is_file($file))
+			return $file;
+	}
+	
+	// Can't handle it
+	return false;
+}
 
 
 
@@ -291,5 +435,11 @@ function jabLogout()
 	unset($_SESSION['jab_userrights']);
 }
 
+
+/*
+include_once('geshi.php')
+$geshi = new GeSHi($source, $language);
+echo $geshi->parse_code();
+*/
 
 ?>

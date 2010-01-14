@@ -238,9 +238,10 @@ class Markdown_Parser {
 	var $predef_urls = array();
 	var $predef_titles = array();
 	
-	var $local_link_prefix;		// Insert before links that don't start with /
-	var $root_link_prefix;		// Insert before links that don't start with protocol/domain
-
+	var $fn_qualify_url;		// If set, called to qualify urls
+	var $fn_image_size;			// If set, called to locate image files for <img> size generation  $this->fn_image_size($this, $url)
+	var $fn_anchor_attribs;		// If set, called the generate anchor attributes  $this->fn_anchor_attribs($this, $url)
+	var $fn_format_code;		// If set, called to format code blocks
 
 	function Markdown_Parser() {
 	#
@@ -758,9 +759,10 @@ class Markdown_Parser {
 
 		if (isset($this->urls[$link_id])) {
 			$url = $this->urls[$link_id];
+			$attribs=$this->getAnchorAttribs($url);
 			$url = $this->encodeAttribute($this->qualifyUrl($url));
 			
-			$result = "<a href=\"$url\"";
+			$result = "<a href=\"$url\"".$attribs;
 			if ( isset( $this->titles[$link_id] ) ) {
 				$title = $this->titles[$link_id];
 				$title = $this->encodeAttribute($title);
@@ -782,9 +784,10 @@ class Markdown_Parser {
 		$url			=  $matches[3] == '' ? $matches[4] : $matches[3];
 		$title			=& $matches[7];
 
+		$attribs = $this->getAnchorAttribs($url);
 		$url = $this->encodeAttribute($this->qualifyUrl($url));
 
-		$result = "<a href=\"$url\"";
+		$result = "<a href=\"$url\"".$attribs;
 		if (isset($title)) {
 			$title = $this->encodeAttribute($title);
 			$result .=  " title=\"$title\"";
@@ -796,6 +799,39 @@ class Markdown_Parser {
 		return $this->hashPart($result);
 	}
 
+	function getImageSize($url)
+	{
+		if (isset($this->fn_image_size))
+		{
+			$fn=$this->fn_image_size;
+			return $fn($this, $url);
+		}
+		else
+			return "";
+	}
+	
+	function qualifyUrl($url)
+	{
+		if (isset($this->fn_qualify_url))
+		{
+			$fn=$this->fn_qualify_url;
+			return $fn($this, $url);
+		}
+		else
+			return "";
+	}
+
+	function getAnchorAttribs($url)
+	{
+		if (isset($this->fn_anchor_attribs))
+		{
+			$fn=$this->fn_anchor_attribs;
+			return $fn($this, $url);
+		}	
+		else
+			return "";
+	}
+	
 
 	function doImages($text) {
 	#
@@ -864,7 +900,7 @@ class Markdown_Parser {
 		$alt_text = $this->encodeAttribute($alt_text);
 		if (isset($this->urls[$link_id])) {
 			$url = $this->encodeAttribute($this->qualifyUrl($this->urls[$link_id]));
-			$result = "<img src=\"$url\" alt=\"$alt_text\"";
+			$result = "<img src=\"$url\" alt=\"$alt_text\"".$this->getImageSize($url);
 			if (isset($this->titles[$link_id])) {
 				$title = $this->titles[$link_id];
 				$title = $this->encodeAttribute($title);
@@ -888,7 +924,7 @@ class Markdown_Parser {
 
 		$alt_text = $this->encodeAttribute($alt_text);
 		$url = $this->encodeAttribute($this->qualifyUrl($url));
-		$result = "<img src=\"$url\" alt=\"$alt_text\"";
+		$result = "<img src=\"$url\" alt=\"$alt_text\"".$this->getImageSize($url);
 		if (isset($title)) {
 			$title = $this->encodeAttribute($title);
 			$result .=  " title=\"$title\""; # $title already quoted
@@ -1124,12 +1160,22 @@ class Markdown_Parser {
 		$codeblock = $matches[1];
 
 		$codeblock = $this->outdent($codeblock);
-		$codeblock = htmlspecialchars($codeblock, ENT_NOQUOTES);
-
-		# trim leading newlines and trailing newlines
 		$codeblock = preg_replace('/\A\n+|\n+\z/', '', $codeblock);
+		
+		if (isset($this->fn_format_code))
+		{
+			$fn=$this->fn_format_code;
+			$codeblock=$fn($this, $codeblock);
+		}
+		else
+		{
+			$codeblock = htmlspecialchars($codeblock, ENT_NOQUOTES);
 
-		$codeblock = "<pre><code>$codeblock\n</code></pre>";
+			# trim leading newlines and trailing newlines
+			$codeblock = preg_replace('/\A\n+|\n+\z/', '', $codeblock);
+			$codeblock = "<pre><code>$codeblock\n</code></pre>";
+		}
+
 		return "\n\n".$this->hashBlock($codeblock)."\n\n";
 	}
 
@@ -1420,23 +1466,6 @@ class Markdown_Parser {
 		$text = str_replace('"', '&quot;', $text);
 		return $text;
 	}
-	
-	function qualifyUrl($url)
-	{
-		// If contains protocol, leave it alone
-		if (strstr($url, "://")!==false)
-			return $url;
-			
-		// Does it start with a slash
-		if ($url[0]!="/")
-			$url=$this->local_link_prefix.$url;
-
-		// Add the root link prefix
-		$url=$this->root_link_prefix.$url;			
-			
-		return $url;
-	}
-	
 	
 	function encodeAmpsAndAngles($text) {
 	#

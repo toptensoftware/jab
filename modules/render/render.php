@@ -49,13 +49,13 @@ function jabLoadContent($filename)
 		}
 		
 		// End of line
-		if ($text[$i]=="\r" || $text[$i]=="\n")		
+		if ($text[$i]=="" || $text[$i]=="\n")		
 		{
 			// Extract the value
 			$value=substr($text, $line, $i-$line);
 			
 			// Skip the EOL
-			if ($text[$i]=="\r")
+			if ($text[$i]=="")
 				$i++;
 			if ($text[$i]=="\n")
 				$i++;
@@ -113,6 +113,11 @@ function jabRenderPartialView($file, &$model, $renderContext="partial")
 		// Load jab file
 		$view=jabLoadContent($file);
 		
+		if (isset($view['syntax']))
+		{
+			$jab['syntax_language']=$view['syntax'];
+		}
+		
 		// Format content
 		jabRequire("markdown");
 		$view['content']=jabMarkdown($view['content']);
@@ -159,19 +164,52 @@ function jabRenderPartialView($file, &$model, $renderContext="partial")
 	set_include_path($oldpath);
 }	
 
+// Handle static cache control request/response
+function jabHandleStaticCacheControl($file)
+{
+	$modified=gmdate("D, d M Y H:i:s", filemtime($file))." GMT";
+
+	// Setup cache-control
+	$expiresSeconds=60*60*24;	// 24 hours
+	Header("Expires: ".gmdate("D, d M Y H:i:s", time() + $expiresSeconds)." GMT");
+	Header("Last-Modified: ".$modified);
+	Header("Cache-Control: max-age:$expiresSeconds, must-revalidate");
+	header("Pragma: cache");
+
+	// Handle if-modified-since request
+	$if_modified_since=preg_replace('/;.*$/', '', $HTTP_IF_MODIFIED_SINCE);
+	if ($if_modified_since==$modified)
+	{
+		Header("HTTP/1.0 304 Not Modified");
+		exit;
+	}
+	
+}
+
 // Render a view and exit
 function jabRenderView($file, $model)
 {
+	// Handle cache control on static .jab files
+	if (substr($file, -4)==".jab")
+	{
+		jabHandleStaticCacheControl($file);
+	}
+	
+	ob_start("ob_gzhandler");
 	jabRenderPartialView($file, $model, "page");
+	
+	ob_end_flush();
 	die;
 }
 
 // Render a view to an email
 function jabRenderMail($file, $model)
 {
+//	return mail("contact@cantabilesoftware.com", "Mail Test", "Testing", "From: brobinson@toptensoftware.com\nReply-To: brobinson@toptensoftware.com\n");
+
 	// Render view to buffer
 	ob_start();	
-	jabRenderPartial($file, $model, "email");
+	jabRenderPartialView($file, $model, "email");
 	$message=ob_get_contents();		
 	ob_end_clean();
 
@@ -180,10 +218,19 @@ function jabRenderMail($file, $model)
 	
 	// Setup from header
 	if (isset($model['from']))
-		$headers.="From: ".$model['from']."\nReply-To: ".$model['from']."\n".$headers;
+		$headers="From: ".$model['from']."\nReply-To: ".$model['from']."\n".$headers;
+	
+	/*	
+	ob_end_clean();
+	jabPrint("to:".$model['to']);
+	jabPrint("subject:".$model['from']);
+	jabPrint("message:".$message);
+	echo "<pre>".htmlspecialchars($headers)."</pre>";
+	die;
+	*/
 		
 	// Send mail
-	return mail($model['to'], $model['subject'], $message, $headers);
+	return @mail($model['to'], $model['subject'], $message, $headers);
 }
 
 global $jab;
@@ -198,6 +245,7 @@ $jab['contentTypes']=array(
 	"html"=>"text/html",
 	"exe"=>"application/octet-stream",
 	"zip"=>"application/octet-stream",
+	"ico"=>"application/octet-stream",
 	);
 		
 
@@ -217,9 +265,15 @@ function jabEchoFile($file)
 	else
 		throw new Exception("Refusing to echo file contents for '$file' due to unknown file extension '$ext'");
 		
+		
 	ob_end_clean();
-	Header( "Content-type: {$contentType}");
+
+	jabHandleStaticCacheControl($file);
+	Header("Content-type: {$contentType}");
+
+	ob_start("ob_gzhandler");
 	readfile($file);
+	ob_end_flush();
 	die;
 }
 

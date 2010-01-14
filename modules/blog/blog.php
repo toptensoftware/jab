@@ -18,8 +18,9 @@ function jabRouteBlog($blog)
 	jabRoute("get", $blog['routePrefix']."/comments/accept/{articleid}/{commentid}", "blog_controller.php", "accept_comment", $blog);
 	jabRoute("get", $blog['routePrefix']."/comments/reject/{articleid}/{commentid}", "blog_controller.php", "reject_comment", $blog);
 	jabRoute("get", $blog['routePrefix']."/comments/delete/{articleid}/{commentid}", "blog_controller.php", "delete_comment", $blog);
-	jabRoute("get", $blog['routePrefix']."/{filename}", "blog_controller.php", "get_uploaded_file", $blog);
 	jabRoute("get", $blog['routePrefix']."/feed.rss", "blog_controller.php", "get_rss_feed", $blog);
+
+	jabRouteStaticContent($blog['routePrefix'], $blog['uploadfolder']);
 	
 	jabSetRouteHandlerPath(null);
 	jabSetAuthContext(null);

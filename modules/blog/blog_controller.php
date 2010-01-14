@@ -211,29 +211,6 @@ function delete_comment($articleid, $commentid)
 	jabRedirect($article->FullUrl());
 }
 
-function get_uploaded_file($filename)
-{
-	global $blog;
-	
-	// Check uploads supported
-	if (!isset($blog['uploadfolder']))
-		return;
-		
-	// Check for attempt to access something in another folder
-	if (strstr($filename, "..")!==false || strstr($filename, "/")!==false)
-		return;
-		
-	// Work out target file
-	$target_path=jabPathAppend($blog['uploadfolder'], $filename);
-	
-	// Quit if doesn't exist
-	if (!file_exists($target_path))
-		return;
-
-	// Serve it
-	jabEchoFile($target_path);
-}
-
 function get_rss_feed()
 {
 	global $blog;

@@ -178,7 +178,7 @@ class BlogArticle
 	{
 		global $blog;
 		jabRequire("markdown");
-		$parser = new Markdown_Parser;
+		$parser = jabCreateMarkdownParser(false);
 		$parser->local_link_prefix="/".$blog['routePrefix']."/";
 		if ($bRss)
 			$parser->root_link_prefix="http://".$_SERVER['HTTP_HOST'];
@@ -296,6 +296,7 @@ class BlogComment
 
 	function Format()
 	{
+		jabRequire("markdown");
 		return jabMarkdown($this->Content, true);
 	}
 	

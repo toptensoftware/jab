@@ -59,7 +59,7 @@ function editor_get()
 	}
 	catch (Exception $ex)
 	{
-		$model['content']="title=New File\nsubtitle=\nkeywords=\n---\n## New File ##\n\n";
+		$model['content']="title=New File\nkeywords=\n---\n## New File ##\n\n";
 	}
 
 	// Render editor

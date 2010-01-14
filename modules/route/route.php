@@ -306,12 +306,14 @@ function jabProcessRoutes()
 
 function jabRouteStaticContent($routePrefix, $contentRoot)
 {
+	$routeData['contentRoot']=$contentRoot;
+	$routeData['routePrefix']=$routePrefix;
+
 	if (strlen($routePrefix)==0)	
 		$routePrefix="*";
 	else
 		$routePrefix.="/*";
 
-	$routeData['contentRoot']=$contentRoot;
 	jabRoute("get", $routePrefix, null, "jabDoRouteStaticContent", $routeData);
 }
 
@@ -377,6 +379,43 @@ function jabDoRouteStaticContent($urlTail, $contentRoot)
 	}
 		
 }
+
+
+function jabStaticUrlToFile($url)
+{
+	// Walk the routing table looking for static routing entries
+	global $jab;
+	foreach ($jab['routingEntries'] as $routeEntry)
+	{
+		if ($routeEntry['function']=='jabDoRouteStaticContent')
+		{
+			$routePrefix=$routeEntry['routeData']['routePrefix'];
+			$contentRoot=$routeEntry['routeData']['contentRoot'];
+			
+			$file=false;
+			if (strlen($routePrefix)==0)
+			{
+				$file=$contentRoot.$url;
+			}
+			else
+			{
+				if (substr($url, 0, strlen($routePrefix)+2)=="/".$routePrefix."/")
+				{
+					$file=$contentRoot.substr($url, strlen($routePrefix)+1);
+				}
+			}
+			
+			
+			if (is_file($file))
+				return realpath($file);
+		}
+	}
+	
+	return false;
+}
+
+global $jab;
+$jab['fn_url_to_file']='jabStaticUrlToFile';
 
 
 ?>

@@ -51,16 +51,16 @@ function contact_post()
 	}
 	
 	$model['to']=$contact['emailTo'];
-	$model['from']=$model['name']." <".$model['email'].">";
+	$model['from']="\"".$model['name']."\" <".$model['email'].">";
 	$model['subject']=$contact['emailSubject'];
-	if (!jabRenderView("contact_email.php", $model))
+	if (!jabRenderMail("contact_email.php", $model))
 	{
 		$model['send_error']=true;
 		jabRenderView("contact_view_form.php", $model);
 	}	
 	else
 	{
-		jabRenderView("contact_view_success.jab", null);
+		jabRenderView("contact_view_success.php", null);
 	}
 	
 }
