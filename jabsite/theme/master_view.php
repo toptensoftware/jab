@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <?php
-// Work out title by extracting from start of document
+// Work out title and subtitle by extracting from start of document
 if (strlen($view['title'])==0 && preg_match("/^[ \t\r\n]*<h1>(.*)<\/h1>(.*)$/isU", $view['content'], $matches, PREG_OFFSET_CAPTURE)==1)
 {
 	$view['title']=$matches[1][0];

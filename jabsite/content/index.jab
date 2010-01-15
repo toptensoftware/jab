@@ -1,0 +1,17 @@
+title=Welcome
+keywords=
+---
+## Welcome to Jab! ##
+
+Congratulations, you're now working!
+
+## Next Steps ##
+
+1. Make sure you have run 
+	* `sudo chmod 777 upload`
+	* `sudo chmod 777 data`
+1. Try to [login](/?login).  The default username/password is jab/jab.
+2. After logging in you should have an Edit Page that can be used to edit this page.
+3. Try posting a [blog](/blog) article.
+4. Change the login username and password by editing index.php.
+
