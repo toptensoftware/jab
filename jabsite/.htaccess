@@ -1,0 +1,7 @@
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^(.+[^/])$ http://%{HTTP_HOST}/$1/ [R=301,L] 
+RewriteCond %{SCRIPT_FILENAME} !-f
+RewriteRule ^(.*)$ /jabmain.php [QSA,L]
+
+#Options All -Indexes
