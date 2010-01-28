@@ -9,6 +9,8 @@ $jab['jab_dir']=dirname(__FILE__);
 $jab['login_page']="/account/login?referrer={referrer}";
 $jab['editor_page']="/editor?file={file}&referrer={referrer}";
 
+$_SERVER['REQUEST_URI_CLEAN']=strtok($_SERVER['REQUEST_URI'],'?');
+
 /////////////////////////////////////////////////////////////////////////////
 // Module loading
 

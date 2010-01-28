@@ -33,7 +33,7 @@ if (strlen($view['subtitle'])==0 && preg_match("/^[ \t\r\n]*<h2>(.*)<\/h2>(.*)$/
 <a href="/">Home</a>&nbsp;&nbsp;&nbsp;
 <?php if (is_array($model) && $model['sourceFile']) { jabEditLink("Edit Page", $model['sourceFile']); echo "&nbsp;&nbsp;&nbsp";} ?>
 <?php if (jabUserName()!=null):?>
-<span style="float:right"><a href="/account/logout?referrer=<?php echo htmlspecialchars($_SERVER["REDIRECT_URL"])?>">Logout <?php echo htmlspecialchars(jabUserName())?></a></span>
+<span style="float:right"><a href="/account/logout?referrer=<?php echo htmlspecialchars($_SERVER["REQUEST_URI_CLEAN"])?>">Logout <?php echo htmlspecialchars(jabUserName())?></a></span>
 <?php endif; ?>
 </p>
 </div>

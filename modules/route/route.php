@@ -155,7 +155,7 @@ function jabProcessRoute($httpmethods, $pathSpec, $impl, $function, $routeData, 
 	$routingDesc="$httpmethods, $pathSpec, $impl, $function";
 
 	// Match path	
-	$vars=MatchPath($pathSpec, $_SERVER["REDIRECT_URL"]);
+	$vars=MatchPath($pathSpec, $_SERVER["REQUEST_URI_CLEAN"]);
 	if ($vars===null)
 	{
 		return false;

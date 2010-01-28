@@ -8,7 +8,7 @@ jabRequire("forms");
 <?php jabHtmlErrors($model['errors'], "Please correct the following errors:") ?>
 
 <?php // ---------------- Main Edit Form----------------- ?>
-<form class="mainform" id="theform" method="post" action="<?php echo $_SERVER["REDIRECT_URL"]?>" enctype="multipart/form-data"> 
+<form class="mainform" id="theform" method="post" action="<?php echo $_SERVER["REQUEST_URI_CLEAN"]?>" enctype="multipart/form-data"> 
 
 	<?php jabHtmlHidden("deleteconfirmed", $model['deleteconfirmed']) ?>
 	<?php jabHtmlHidden("file", $model['file']) ?>

@@ -159,7 +159,7 @@ function view_post_post($id)
 				$model['from']=strlen($model['comment']->Email)==0 ? $blog['notifyEmailFrom'] : $model['comment']->Email;
 				jabRenderMail("blog_email_commentposted.php", $model);
 			}
-			jabRedirect($_SERVER["REDIRECT_URL"]);
+			jabRedirect($_SERVER["REQUEST_URI_CLEAN"]);
 		}
 	}
 	

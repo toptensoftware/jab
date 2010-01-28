@@ -2,7 +2,7 @@
 jabRequire("forms");
 ?>
 <h1>Login</h1>
-<form class="mainform" id="theform" method="post" action="<?php echo $_SERVER["REDIRECT_URL"]?>"> 
+<form class="mainform" id="theform" method="post" action="<?php echo $_SERVER["REQUEST_URI_CLEAN"]?>"> 
 
 <?php if ($model['login_failed']): ?>
 	<div class="Errors">

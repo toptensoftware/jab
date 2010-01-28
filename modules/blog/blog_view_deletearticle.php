@@ -7,7 +7,7 @@ $article=$model['article'];
 <h2><?php echo htmlspecialchars($model['blog']['description']) ?></h2>
 
 <p>Really delete this article?</p>
-<form class="mainform" id="theform" method="post" action="<?php echo $_SERVER["REDIRECT_URL"]?>"> 
+<form class="mainform" id="theform" method="post" action="<?php echo $_SERVER["REQUEST_URI_CLEAN"]?>"> 
 <?php jabHtmlSubmitButton("Yes, delete it", "delete") ?>
 <?php jabHtmlSubmitButton("No, keep it", "cancel") ?>
 </form> 

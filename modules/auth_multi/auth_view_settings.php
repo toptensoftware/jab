@@ -3,7 +3,7 @@ jabRequire("forms");
 ?>
 <h1>Accont Settings</h1>
 
-<form class="mainform" id="theform" method="post" action="<?php echo $_SERVER["REDIRECT_URL"]?>"> 
+<form class="mainform" id="theform" method="post" action="<?php echo $_SERVER["REQUEST_URI_CLEAN"]?>"> 
 
 	<?php jabHtmlErrors($model['errors'], "Please correct the following errors:") ?>
  
