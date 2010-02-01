@@ -1,13 +1,14 @@
 <?php
 /////////////////////////////////////////////////////////////////////////////
-// sharethis.php - support for shareThis links
+// disqus.php - support for disqus commenting
 
 function jabInitDisqus($forumname)
 {
 	global $jab;
 	$jab['disqusForumName']=$forumname;
 	$jab['disqusScriptAdded']=false;
-	$jab['additional_head_tags']="<script type=\"text/javascript\">var disqus_developer = true;</script>";
+	
+//	$jab['additional_head_tags']="<script type=\"text/javascript\">var disqus_developer = true;</script>";
 }
 
 function jabRenderDisqusLink($url)
