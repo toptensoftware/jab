@@ -5,14 +5,46 @@ $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/r
 ?>
 <h1><?php echo htmlspecialchars($model['blog']['title']) ?></h1>
 <h2><?php echo htmlspecialchars($model['blog']['description']) ?></h2>
+<?php // ---------------- Command Bar----------------- ?>
+<p>
+<a href="<?php echo blog_link("/index") ?>">Articles</a>
+| <a href="<?php echo blog_link("/fullindex") ?>">Full Index</a>
+| <a href="<?php echo blog_link("/feed.rss") ?>">RSS Feed</a> 
+<?php if (jabCanUser("post")): ?>
+| <a href="/<?php echo $model['blog']['routePrefix']?>/edit/new">New Post</a>
+</p>
+<hr/>
+<?php endif ?>
+
 <div class="blog_article">
-<h2><?php echo $article->Title ?></h2>
+<h2><?php echo htmlspecialchars($article->Title) ?></h2>
 <?php echo $article->Format() ?>
 <p><small>Posted <?php echo date('l, jS F Y', $article->TimeStamp)." at ".date('h:i a', $article->TimeStamp)?></small></p>
+<p>
+<?php 
+
+if (function_exists(jabRenderShareLink)) 
+{ 
+	jabRenderShareLink($article->Title, "http://".$_SERVER['HTTP_HOST'].$article->FullUrl()); 
+} 
+
+if ($model['blog']['enableComments'] && function_exists(jabRenderDisqusEditor)) 
+{ 
+	jabRenderDisqusEditor();
+}
+else
+{
+	echo "<a href=\"".$article->FullUrl()."\">Permalink</a>\n";
+}
+
+?>
+
+</p>
+<div id="disqus_thread"></div>
 </div>
 
 <?php
-if ($model['blog']['enableComments'])
+if ($model['blog']['enableComments'] && !function_exists(jabRenderDisqusLink))
 	$article->LoadComments(jabCanUser("review_comments"));
 if (sizeof($article->Comments)>0):
 ?>
@@ -43,7 +75,7 @@ if (sizeof($article->Comments)>0):
 </div>
 <?php endif; ?>
 
-<?php if ($model['blog']['enableComments']): ?>
+<?php if ($model['blog']['enableComments'] && !function_exists(jabRenderDisqusLink)): ?>
 <h3>Leave A Comment</h3>
 <?php if ($model['preview']): ?>
 <p class="startpreview">Preview</p>
@@ -71,7 +103,8 @@ if (sizeof($article->Comments)>0):
 	<small>All comments will be reviewed for spam before being displayed.</small>
  
 </form> 
-<?php else: ?>
+<?php endif; ?>
+<?php if (!$model['blog']['enableComments']): ?>
 <p><small>Comments disabled</small></p>
 <?php endif; ?>
 

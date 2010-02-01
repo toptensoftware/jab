@@ -4,8 +4,12 @@ $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/r
 <h1><?php echo htmlspecialchars($model['blog']['title']) ?></h1>
 <h2><?php echo htmlspecialchars($model['blog']['description']) ?></h2>
 <?php // ---------------- Command Bar----------------- ?>
+<p>
+<a href="<?php echo blog_link("/fullindex") ?>">Full Index</a>
+| <a href="<?php echo blog_link("/feed.rss") ?>">RSS Feed</a>
 <?php if (jabCanUser("post")): ?>
-<p><a href="/<?php echo $model['blog']['routePrefix']?>/edit/new">New Post</a></p>
+| <a href="/<?php echo $model['blog']['routePrefix']?>/edit/new">New Post</a>
+</p>
 <hr/>
 <?php endif ?>
 
@@ -29,14 +33,34 @@ $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/r
 
 <?php // ---------------- Article ----------------- ?>
 <div class="blog_article">
-<h2><?php echo $article->Title ?></h2>
+<h2><?php echo htmlspecialchars($article->Title) ?></h2>
 <?php echo $article->Format() ?>
 <p><small>Posted <?php echo date('l, jS F Y', $article->TimeStamp)." at ".date('h:i a', $article->TimeStamp)?></small></p>
-<?php if ($model['blog']['enableComments']): ?>
-<p><a href="<?php echo $article->FullUrl() ?>">Read or Leave Comments</a></p>
-<?php else: ?>
-<p><a href="<?php echo $article->FullUrl() ?>">Permalink</a></p>
-<?php endif; ?>
+<p>
+<?php
+if (function_exists(jabRenderShareLink))
+{
+	jabRenderShareLink($article->Title, "http://".$_SERVER['HTTP_HOST'].$article->FullUrl());
+}
+
+if ($model['blog']['enableComments'])
+{
+	if (function_exists(jabRenderDisqusLink))
+	{
+		jabRenderDisqusLink($article->FullUrl());
+	}
+	else
+	{
+		echo "<a href=\"".$article->FullUrl()."\">Read or Leave Comments</a>\n";
+	}
+}
+else
+{
+	echo "<a href=\"".$article->FullUrl()."\">Permalink</a>\n";
+}
+
+?>
+</p>
 </div>
 
 <?php // ---------------- End of Article Loop ----------------- ?>

@@ -9,8 +9,9 @@ function jabRouteBlog($blog)
 {
 	jabSetAuthContext("blog");
 	jabSetRouteHandlerPath(dirname(__FILE__));
-	
+
 	jabRoute("get", $blog['routePrefix']."/index/{page}", "blog_controller.php", "index", $blog);
+	jabRoute("get", $blog['routePrefix']."/fullindex", "blog_controller.php", "fullindex", $blog);
 	jabRoute("get;post", $blog['routePrefix']."/edit/new", "blog_controller.php", "new_post_{httpmethod}", $blog);
 	jabRoute("get;post", $blog['routePrefix']."/edit/{id}", "blog_controller.php", "edit_post_{httpmethod}", $blog);
 	jabRoute("get;post", $blog['routePrefix']."/delete/{id}", "blog_controller.php", "delete_post_{httpmethod}", $blog);

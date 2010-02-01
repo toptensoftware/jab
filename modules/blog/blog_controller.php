@@ -29,6 +29,18 @@ function index($page=0)
 	jabRenderView("blog_view_index.php", $model);
 }
 
+function fullindex()
+{
+	global $blog;
+	$model['blog']=$blog;
+
+	// Load all articles
+	$model['articles']=blog_load_articles(0, 0x7fffffff);
+
+	// Render it		
+	jabRenderView("blog_view_fullindex.php", $model);
+}
+
 function new_post_get()
 {
 	jabCanUser("post", true);
