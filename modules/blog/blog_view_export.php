@@ -1,4 +1,4 @@
-n\<?php $view['masterview']="none"; ?>
+<?php $view['masterview']="none"; ?>
 <<?php echo "?" ?>xml version="1.0" encoding="ISO-8859-1"<?php echo "?"?>>
 <blog>
 <?php foreach ($model['articles'] as $article): ?>
@@ -15,10 +15,12 @@ $article->LoadComments(true);
 foreach ($article->Comments as $comment): 
 ?>
 			<comment>
-				<id><?php echo htmlspecialchars($comment->ID) ?></name>
+				<id><?php echo htmlspecialchars($comment->ID) ?></id>
 				<name><?php echo htmlspecialchars($comment->Name) ?></name>
 				<email><?php echo htmlspecialchars($comment->Email) ?></email>
+				<website><?php echo htmlspecialchars($comment->Website) ?></website>
 				<pending><?php echo $comment->PendingReview?></pending>
+				<byauthor><?php echo $comment->ByAuthor?></byauthor>
 				<timestamp><?php echo date("D, j M Y G:i:s", $comment->TimeStamp)?> GMT.</timestamp>
 				<content><?php echo htmlspecialchars($comment->Content) ?></content>
 			</comment>

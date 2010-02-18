@@ -5,12 +5,22 @@ $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/r
 ?>
 <h1><?php echo htmlspecialchars($model['blog']['title']) ?></h1>
 <h2><?php echo htmlspecialchars($model['blog']['description']) ?></h2>
+<script type="text/javascript">
+function appendEmail(email)
+{
+	var field=document.getElementById("ReplyTo");
+	if (field.value.length>0)
+		field.value += ", " + email;
+	else
+		field.value = email;
+}
+</script>
 <?php // ---------------- Command Bar----------------- ?>
 <p>
 <a href="<?php echo blog_link("/index") ?>">Articles</a>
 | <a href="<?php echo blog_link("/fullindex") ?>">Full Index</a>
 | <a href="<?php echo blog_link("/feed.rss") ?>">RSS Feed</a> 
-<?php if (jabCanUser("post")): ?>
+<?php if (jabCanUser("author")): ?>
 | <a href="/<?php echo $model['blog']['routePrefix']?>/edit/new">New Post</a>
 </p>
 <?php endif ?>
@@ -40,13 +50,13 @@ if ($model['blog']['enableComments'] && function_exists(jabRenderDisqusEditor))
 
 <?php
 if ($model['blog']['enableComments'] && !function_exists(jabRenderDisqusLink))
-	$article->LoadComments(jabCanUser("review_comments"));
+	$article->LoadComments(jabCanUser("author"));
 if (sizeof($article->Comments)>0):
 ?>
 <div class="blog_comments">
 <? foreach ($article->Comments as $comment): ?>
 
-<?php if (jabCanUser("review_comments")): ?>
+<?php if (jabCanUser("author")): ?>
 <div class="blog_comment_actions">
 <p>
 <?php if ($comment->PendingReview): ?>
@@ -55,11 +65,12 @@ if (sizeof($article->Comments)>0):
 <a href="<?php echo blog_link("/comments/reject/".$article->ID."/".$comment->ID) ?>">[Reject]</a>
 <?php endif; ?>
 <a href="<?php echo blog_link("/comments/delete/".$article->ID."/".$comment->ID) ?>" onClick="return confirm('Are you sure you want to delete this comment?')">[Delete]</a>
+<a href="javascript:appendEmail('<?php echo htmlspecialchars($comment->Email) ?>')">[Reply]</a>
 </p>
 </div>
 <?php endif ?>
 
-<div class="blog_comment">
+<div class="blog_comment<?php echo $comment->ByAuthor ? " blog_authorcomment" : "" ?>">
 <div class="blog_comment_gravatar"><img src="http://www.gravatar.com/avatar/<?php echo md5(strtolower($comment->Email)) ?>?s=60&d=<?php echo urlencode("http://".$_SERVER['HTTP_HOST']."/theme/default_gravatar_image.png")?>" width="60" height="60"></div>
 <div class="blog_comment_content">
 <span style="float:right"><small>Posted <?php echo formatRelativeTime($comment->TimeStamp)?></small></span>
@@ -87,14 +98,20 @@ if (sizeof($article->Comments)>0):
 <form class="mainform" id="theform" method="post" action="<?php echo $_SERVER["REQUEST_URI_CLEAN"]?>"> 
  
 	<?php jabHtmlHidden("ID", $model['article']->ID) ?>
+<?php if (!jabCanUser("author")): ?>
 	<?php jabHtmlInput("Your Name:", "Name", $model['comment']->Name, "stdfield") ?>
 	<?php jabHtmlInput("Email Address: <small>(optional, not shown, used for <a href=\"http://www.gravatar.com\" target=\"_blank\">Gravatar</a>)</small>", "Email", $model['comment']->Email, "stdfield") ?>
 	<?php jabHtmlInput("Website: <small>(optional, nofollow)</small>", "Website", $model['comment']->Website, "stdfield") ?>
+<?php else: ?>
+	<?php jabHtmlInput("Reply To:", "ReplyTo", $model['ReplyTo'], "stdfield") ?>
+<?php endif; ?>
 	<?php jabHtmlTextArea("Message: <small>(supports some <a href=\"http://michelf.com/projects/php-markdown/extra/\" target=\"_blank\">Markdown Extra</a>)</small>", "Content", $model['comment']->Content, $class="stdtextareafield") ?>
 
 	<div class="clearer"></div>
     
+<?php if (!jabCanUser("author")): ?>
 	<?php jabRenderCaptcha() ?>
+<?php endif; ?>
 	
 	<?php jabHtmlSubmitButton("Post Comment", "post") ?>
 	<?php jabHtmlSubmitButton("Preview", "preview") ?>

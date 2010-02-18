@@ -46,7 +46,8 @@ SQL
 						Website Text,
 						Timestamp INTEGER, 
 						Content TEXT, 
-						PendingReview BOOLEAN
+						PendingReview BOOLEAN,
+						ByAuthor BOOLEAN DEFAULT(0)
 						);
 SQL
 );
@@ -297,6 +298,7 @@ class BlogComment
 	var $Email;
 	var $Website;
 	var $PendingReview;
+	var $ByAuthor;
 	
 	function BlogComment($row=null)
 	{
@@ -310,10 +312,12 @@ class BlogComment
 			$this->Content=$row['Content'];	
 			$this->TimeStamp=intval($row['Timestamp']);
 			$this->PendingReview=(boolean)$row['PendingReview'];
+			$this->ByAuthor=(boolean)$row['ByAuthor'];
 		}
 		else
 		{
 			$this->PendingReview=true;
+			$this->ByAuthor=false;
 			$this->TimeStamp=time();
 		}
 	}
@@ -321,23 +325,31 @@ class BlogComment
 	function Format()
 	{
 		jabRequire("markdown");
-		return jabMarkdown($this->Content, true);
+		return jabMarkdown($this->Content, !$this->ByAuthor);
 	}
 	
 	function FormatNameLink()
 	{
+		$ret="";
 		if (strlen($this->Website)>0)
 		{
 			$site=$this->Website;
 			$site=str_replace("<", "", $site);
-			if (substr($site, 0, 6)!="http://")
+			if (substr($site, 0, 7)!="http://")
 				$site="http://".$site;
-			return "<a href=\"".htmlspecialchars($site)."\" title=\"".htmlspecialchars($this->Website)."\" rel=\"nofollow\" target=\"_blank\">".htmlspecialchars($this->Name)."</a>";
+			$ret="<a href=\"".htmlspecialchars($site)."\" title=\"".htmlspecialchars($this->Website)."\" rel=\"nofollow\" target=\"_blank\">".htmlspecialchars($this->Name)."</a>";
 		}
 		else
 		{
-			return htmlspecialchars($this->Name);
+			$ret=htmlspecialchars($this->Name);
 		}
+		
+		if (jabCanUser("author") && strlen($this->Email)>0)
+		{
+			$ret.=" (<a href=\"mailto:".htmlspecialchars($this->Email)."\">".htmlspecialchars($this->Email)."</a>)";
+		}
+		
+		return $ret;
 	}
 
 	function InitFromForm(&$errors)
@@ -346,6 +358,19 @@ class BlogComment
 		$this->Email=jabRequestParam("Email");
 		$this->Website=jabRequestParam("Website");
 		$this->Content=jabRequestParam("Content");
+		$this->ByAuthor=false;
+		
+		global $blog;
+		if (jabCanUser("author"))
+		{
+			$this->ByAuthor=true;			
+			$this->Name=$blog['managingEditor'];
+			$this->Email=$blog['notifyEmailFrom'];
+			if (isset($blog['authorSite']))
+				$this->Website=$blog['authorSite'];
+			else
+				$this->Website="http://".$_SERVER['HTTP_HOST'];
+		}
 		
 		if (strlen($this->Name)==0)
 			$errors[]="Please enter your name";
@@ -360,13 +385,14 @@ class BlogComment
 	function Save()
 	{
 		global $blog;
-		$stmt=$blog['pdo']->prepare("INSERT INTO {$blog['tablePrefix']}Comments(IDArticle, Name, Email, Website, Content, PendingReview, TimeStamp) VALUES (:idarticle, :name, :email, :website, :content, :pendingreview, :timestamp)");
+		$stmt=$blog['pdo']->prepare("INSERT INTO {$blog['tablePrefix']}Comments(IDArticle, Name, Email, Website, Content, PendingReview, ByAuthor, TimeStamp) VALUES (:idarticle, :name, :email, :website, :content, :pendingreview, :byauthor, :timestamp)");
 		$stmt->bindValue(":idarticle", $this->IDArticle);
 		$stmt->bindValue(":name", $this->Name);
 		$stmt->bindValue(":email", $this->Email);
 		$stmt->bindValue(":website", $this->Website);
 		$stmt->bindValue(":content", $this->Content);
 		$stmt->bindValue(":pendingreview", $this->PendingReview);
+		$stmt->bindValue(":byauthor", $this->ByAuthor);
 		$stmt->bindValue(":timestamp", $this->TimeStamp);
 		$stmt->execute();
 		$this->ID=$blog['pdo']->lastInsertId();
@@ -504,7 +530,7 @@ SQL
 			{
 				if ($comment->getName()=="comment")
 				{
-					$stmt=$blog['pdo']->prepare("INSERT INTO {$blog['tablePrefix']}Comments(ID, IDArticle, Name, Email, Website, Content, PendingReview, TimeStamp) VALUES (:id, :idarticle, :name, :email, :website, :content, :pendingreview, :timestamp)");
+					$stmt=$blog['pdo']->prepare("INSERT INTO {$blog['tablePrefix']}Comments(ID, IDArticle, Name, Email, Website, Content, PendingReview, ByAuthor, TimeStamp) VALUES (:id, :idarticle, :name, :email, :website, :content, :pendingreview, :byauthor, :timestamp)");
 					$stmt->bindValue(":id", intval($comment->id));
 					$stmt->bindValue(":idarticle", intval($article->id));
 					$stmt->bindValue(":name", $comment->name);
@@ -512,6 +538,7 @@ SQL
 					$stmt->bindValue(":website", $comment->website);
 					$stmt->bindValue(":content", $comment->content);
 					$stmt->bindValue(":pendingreview", intval($comment->pending));
+					$stmt->bindValue(":byauthor", intval($comment->byauthor));
 					$stmt->bindValue(":timestamp", intval(strtotime($comment->timestamp)));
 					$stmt->execute();
 				}

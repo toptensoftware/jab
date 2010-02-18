@@ -7,7 +7,7 @@ $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/r
 <p>
 <a href="<?php echo blog_link("/fullindex") ?>">Full Index</a>
 | <a href="<?php echo blog_link("/feed.rss") ?>">RSS Feed</a>
-<?php if (jabCanUser("post")): ?>
+<?php if (jabCanUser("author")): ?>
 | <a href="/<?php echo $model['blog']['routePrefix']?>/edit/new">New Post</a>
 </p>
 <?php endif ?>
@@ -19,14 +19,11 @@ $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/r
 <?php foreach ($model['articles'] as $article): ?>
 
 <?php // ---------------- Edit Commands ----------------- ?>
-<?php if (jabCanUser("edit") || jabCanUser("delete")): ?>
+<?php if (jabCanUser("author")): ?>
 <span style="float:right">
 <small>
-<?php if (jabCanUser("edit")): ?>
 <a href="/<?php echo $model['blog']['routePrefix']?>/edit/<?php echo $article->ID?>">[Edit]</a>
-<?php endif; if (jabCanUser("delete")): ?>
 <a href="/<?php echo $model['blog']['routePrefix']?>/delete/<?php echo $article->ID?>">[Delete]</a>
-<?php endif; ?>
 </small>
 </span>
 <?php endif ?>
@@ -51,7 +48,7 @@ if ($model['blog']['enableComments'])
 	}
 	else
 	{
-		echo "<span class=\"blog_comment_button\"><a href=\"".$article->FullUrl()."\">Read or Leave Comments</a> (".$article->GetCommentCount(jabCanUser("review_comments")).")</span>\n";
+		echo "<span class=\"blog_comment_button\"><a href=\"".$article->FullUrl()."\">Read or Leave Comments</a> (".$article->GetCommentCount(jabCanUser("author")).")</span>\n";
 	}
 }
 else

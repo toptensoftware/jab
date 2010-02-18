@@ -190,10 +190,12 @@ function jabHandleStaticCacheControl($file)
 function jabRenderView($file, $model)
 {
 	// Handle cache control on static .jab files
+	/*
 	if (substr($file, -4)==".jab")
 	{
 		jabHandleStaticCacheControl($file);
 	}
+	*/
 	
 	ob_start("ob_gzhandler");
 	jabRenderPartialView($file, $model, "page");

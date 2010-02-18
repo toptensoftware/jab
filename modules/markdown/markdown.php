@@ -102,7 +102,9 @@ function jabMarkdown($text, $safe=false)
 	}
 	
 	if ($safe)
-		$text=htmlspecialchars($text);
+	{
+		$text=str_replace("!!gt!!", ">", htmlspecialchars(str_replace(">", "!!gt!!", $text)));
+	}
 	
 	$text=$parser->transform($text);
 	return $text;	
