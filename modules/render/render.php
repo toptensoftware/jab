@@ -205,8 +205,6 @@ function jabRenderView($file, $model)
 // Render a view to an email
 function jabRenderMail($file, $model)
 {
-//	return mail("contact@cantabilesoftware.com", "Mail Test", "Testing", "From: brobinson@toptensoftware.com\nReply-To: brobinson@toptensoftware.com\n");
-
 	// Render view to buffer
 	ob_start();	
 	jabRenderPartialView($file, $model, "email");
@@ -219,16 +217,10 @@ function jabRenderMail($file, $model)
 	// Setup from header
 	if (isset($model['from']))
 		$headers="From: ".$model['from']."\nReply-To: ".$model['from']."\n".$headers;
+	// Setup Bcc header
+	if (isset($model['bcc']))
+		$headers.="Bcc: ".$model['bcc']."\n";
 	
-	/*	
-	ob_end_clean();
-	jabPrint("to:".$model['to']);
-	jabPrint("subject:".$model['from']);
-	jabPrint("message:".$message);
-	echo "<pre>".htmlspecialchars($headers)."</pre>";
-	die;
-	*/
-		
 	// Send mail
 	return @mail($model['to'], $model['subject'], $message, $headers);
 }
@@ -246,6 +238,7 @@ $jab['contentTypes']=array(
 	"exe"=>"application/octet-stream",
 	"zip"=>"application/octet-stream",
 	"ico"=>"application/octet-stream",
+	"pdf"=>"application/pdf",
 	);
 		
 

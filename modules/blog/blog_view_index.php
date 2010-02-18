@@ -10,8 +10,8 @@ $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/r
 <?php if (jabCanUser("post")): ?>
 | <a href="/<?php echo $model['blog']['routePrefix']?>/edit/new">New Post</a>
 </p>
-<hr/>
 <?php endif ?>
+<hr/>
 
 <?php // ---------------- Article Loop----------------- ?>
 <?php if (sizeof($model['articles'])): ?>
@@ -35,7 +35,7 @@ $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/r
 <div class="blog_article">
 <h2><?php echo htmlspecialchars($article->Title) ?></h2>
 <?php echo $article->Format() ?>
-<p><small>Posted <?php echo date('l, jS F Y', $article->TimeStamp)." at ".date('h:i a', $article->TimeStamp)?></small></p>
+<p><small>Posted <?php echo formatRelativeTime($article->TimeStamp)?></small></p>
 <p>
 <?php
 if (function_exists(jabRenderShareLink))
@@ -51,7 +51,7 @@ if ($model['blog']['enableComments'])
 	}
 	else
 	{
-		echo "<a href=\"".$article->FullUrl()."\">Read or Leave Comments</a>\n";
+		echo "<span class=\"blog_comment_button\"><a href=\"".$article->FullUrl()."\">Read or Leave Comments</a> (".$article->GetCommentCount(jabCanUser("review_comments")).")</span>\n";
 	}
 }
 else
@@ -72,10 +72,10 @@ else
 
 
 <?php // ---------------- Paging ----------------- ?>
-<?php if (isset($model['prevpagelink'])):?>
-<span style="float:left"><a href="<?php echo $model['prevpagelink']?>">&#171; Newer Articles</a></span>
-<?php endif ?>
 <?php if (isset($model['nextpagelink'])):?>
-<span style="float:right"><a href="<?php echo $model['nextpagelink']?>">Older Articles &#187;</a></span>
+<span style="float:left"><a href="<?php echo $model['nextpagelink']?>">&#171; Older Articles</a></span>
+<?php endif ?>
+<?php if (isset($model['prevpagelink'])):?>
+<span style="float:right"><a href="<?php echo $model['prevpagelink']?>">Newer Articles &#187;</a></span>
 <?php endif ?>
 

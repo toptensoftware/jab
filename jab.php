@@ -19,7 +19,11 @@ function jabRequire($modules)
 	// Load each
 	foreach (explode(";", $modules) as $module)
 	{
-		require_once(dirname(__FILE__)."/modules/{$module}/{$module}.php");
+		$file="{$module}/{$module}.php";
+		if (!is_file($file))
+			$file=dirname(__FILE__)."/modules/".$file;
+			
+		require_once($file);
 	}
 }
 

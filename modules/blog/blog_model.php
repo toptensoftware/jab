@@ -9,6 +9,7 @@ function init_blog_db()
 {
 	// Read schema version
 	global $blog;
+	$blog['pdo']->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 	$info=$blog['pdo']->query("SELECT * FROM {$blog['tablePrefix']}Info WHERE Name='SchemaVersion'");
 	$blog['pdo']->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 	if ($info===false)
@@ -42,6 +43,7 @@ SQL
 						IDArticle INTEGER, 
 						Name TEXT, 
 						Email TEXT, 
+						Website Text,
 						Timestamp INTEGER, 
 						Content TEXT, 
 						PendingReview BOOLEAN
@@ -184,7 +186,7 @@ class BlogArticle
 			$parser->root_link_prefix="http://".$_SERVER['HTTP_HOST'];
 		return $parser->transform($this->Content);
 	}
-
+	
 	// Convert title to something-useable-in-a-url  	
 	function UrlTitle()
 	{
@@ -262,6 +264,26 @@ class BlogArticle
 		}
 	}
 	
+	function GetCommentCount($bIncludePending)
+	{
+		global $blog;
+
+		// All comments, or only those not pending review?
+		$cond2="";
+		if (!$bIncludePending)
+			$cond2=" AND PendingReview<>1";
+			
+		$stmt=$blog['pdo']->prepare("SELECT Count(ID) FROM {$blog['tablePrefix']}Comments WHERE IDArticle=:idArticle".$cond2.";");
+		$stmt->bindValue(":idArticle", $this->ID);
+		$stmt->execute();
+		
+		foreach ($stmt as $row)
+		{
+			return intval($row[0]);
+		}
+		
+		return 0;
+	}
 };
 
 // BlogComment - represents a single blog comment
@@ -273,6 +295,7 @@ class BlogComment
 	var	$Content;	
 	var $Name;
 	var $Email;
+	var $Website;
 	var $PendingReview;
 	
 	function BlogComment($row=null)
@@ -283,6 +306,7 @@ class BlogComment
 			$this->IDArticle=$row['IDArticle'];
 			$this->Name=$row['Name'];
 			$this->Email=$row['Email'];
+			$this->Website=$row['Website'];
 			$this->Content=$row['Content'];	
 			$this->TimeStamp=intval($row['Timestamp']);
 			$this->PendingReview=(boolean)$row['PendingReview'];
@@ -300,10 +324,27 @@ class BlogComment
 		return jabMarkdown($this->Content, true);
 	}
 	
+	function FormatNameLink()
+	{
+		if (strlen($this->Website)>0)
+		{
+			$site=$this->Website;
+			$site=str_replace("<", "", $site);
+			if (substr($site, 0, 6)!="http://")
+				$site="http://".$site;
+			return "<a href=\"".htmlspecialchars($site)."\" title=\"".htmlspecialchars($this->Website)."\" rel=\"nofollow\" target=\"_blank\">".htmlspecialchars($this->Name)."</a>";
+		}
+		else
+		{
+			return htmlspecialchars($this->Name);
+		}
+	}
+
 	function InitFromForm(&$errors)
 	{
 		$this->Name=jabRequestParam("Name");
 		$this->Email=jabRequestParam("Email");
+		$this->Website=jabRequestParam("Website");
 		$this->Content=jabRequestParam("Content");
 		
 		if (strlen($this->Name)==0)
@@ -319,10 +360,11 @@ class BlogComment
 	function Save()
 	{
 		global $blog;
-		$stmt=$blog['pdo']->prepare("INSERT INTO {$blog['tablePrefix']}Comments(IDArticle, Name, Email, Content, PendingReview, TimeStamp) VALUES (:idarticle, :name, :email, :content, :pendingreview, :timestamp)");
+		$stmt=$blog['pdo']->prepare("INSERT INTO {$blog['tablePrefix']}Comments(IDArticle, Name, Email, Website, Content, PendingReview, TimeStamp) VALUES (:idarticle, :name, :email, :website, :content, :pendingreview, :timestamp)");
 		$stmt->bindValue(":idarticle", $this->IDArticle);
 		$stmt->bindValue(":name", $this->Name);
 		$stmt->bindValue(":email", $this->Email);
+		$stmt->bindValue(":website", $this->Website);
 		$stmt->bindValue(":content", $this->Content);
 		$stmt->bindValue(":pendingreview", $this->PendingReview);
 		$stmt->bindValue(":timestamp", $this->TimeStamp);
@@ -419,5 +461,89 @@ function blog_link($url)
 	global $blog;
 	return "/".$blog['routePrefix'].$url;
 }
+
+// Import blog content from an XML file
+function blog_import($file, $dropoldcontent)
+{
+	global $blog;
+	
+	if ($dropoldcontent)
+	{
+		$blog['pdo']->exec(<<<SQL
+					DROP TABLE {$blog['tablePrefix']}Info;
+SQL
+);
+		$blog['pdo']->exec(<<<SQL
+					DROP TABLE {$blog['tablePrefix']}Articles;
+SQL
+);
+		$blog['pdo']->exec(<<<SQL
+					DROP TABLE {$blog['tablePrefix']}Comments;
+SQL
+);
+	
+		init_blog_db();
+	}
+
+	// Open the xml file
+	$xml=simplexml_load_file($file);
+	foreach ($xml->children() as $article)
+	{
+		if ($article->getName()=="item")
+		{
+			$stmt=$blog['pdo']->prepare("INSERT INTO {$blog['tablePrefix']}Articles(ID, Title, Timestamp, Content, RateTotal, RateCount) VALUES (:id, :title, :timestamp, :content, :rateTotal, :rateCount)");
+			$stmt->bindValue(":id", intval($article->id));
+			$stmt->bindValue(":title", $article->title);
+			$stmt->bindValue(":timestamp", intval(strtotime($article->timestamp)));
+			$stmt->bindValue(":content", $article->content);
+			$stmt->bindValue(":rateTotal", intval($article->rateTotal));
+			$stmt->bindValue(":rateCount", intval($article->rateCount));
+			$stmt->execute();
+			
+			foreach ($article->comments->children() as $comment)
+			{
+				if ($comment->getName()=="comment")
+				{
+					$stmt=$blog['pdo']->prepare("INSERT INTO {$blog['tablePrefix']}Comments(ID, IDArticle, Name, Email, Website, Content, PendingReview, TimeStamp) VALUES (:id, :idarticle, :name, :email, :website, :content, :pendingreview, :timestamp)");
+					$stmt->bindValue(":id", intval($comment->id));
+					$stmt->bindValue(":idarticle", intval($article->id));
+					$stmt->bindValue(":name", $comment->name);
+					$stmt->bindValue(":email", $comment->email);
+					$stmt->bindValue(":website", $comment->website);
+					$stmt->bindValue(":content", $comment->content);
+					$stmt->bindValue(":pendingreview", intval($comment->pending));
+					$stmt->bindValue(":timestamp", intval(strtotime($comment->timestamp)));
+					$stmt->execute();
+				}
+			}
+		
+		}
+	}
+}
+
+function plural($num) {
+	if ($num != 1)
+		return "s";
+}
+ 
+function formatRelativeTime($date) {
+	$diff = time() - $date;
+	if ($diff<60)
+		return $diff . " second" . plural($diff) . " ago";
+	$diff = round($diff/60);
+	if ($diff<60)
+		return $diff . " minute" . plural($diff) . " ago";
+	$diff = round($diff/60);
+	if ($diff<24)
+		return $diff . " hour" . plural($diff) . " ago";
+	$diff = round($diff/24);
+	if ($diff<7)
+		return $diff . " day" . plural($diff) . " ago";
+	$diff = round($diff/7);
+	if ($diff<4)
+		return $diff . " week" . plural($diff) . " ago";
+	return "on " . date("F j, Y", $date);
+}
+
 
 ?>

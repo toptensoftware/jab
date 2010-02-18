@@ -174,7 +174,9 @@ function jabProcessRoute($httpmethods, $pathSpec, $impl, $function, $routeData, 
 		// Work out full route handler path
 		$fullRouteHandlerPath=$oldpath;
 		if (strlen($routeHandlerPath)>0)
+		{
 			$fullRouteHandlerPath=$oldpath.PATH_SEPARATOR.$routeHandlerPath;
+		}
 		
 		// Find the implementation on the route handler path
 		$impl=jabFindOnPath($fullRouteHandlerPath, $impl);
@@ -412,6 +414,36 @@ function jabStaticUrlToFile($url)
 	}
 	
 	return false;
+}
+
+function jabReRoute($from, $to, $regex=false, $redirect=false)
+{
+	$url=substr($_SERVER['REQUEST_URI'], 1);
+	
+	if ($regex)
+	{
+		$newurl=preg_replace($from, $to, $url);
+		if ($newurl==$from)
+			return false;
+	}
+	else
+	{
+		if ($url!=$from)
+			return false;
+		$urlnew=$to;
+	}
+	
+	$url="/".$url;
+	
+	if ($redirect)
+	{
+		jabRedirect($urlnew);
+	}
+	else
+	{
+		$_SERVER['REQUEST_URI']=$urlnew;
+		$_SERVER['REQUEST_URI_CLEAN']=strtok($urlnew,'?');
+	}
 }
 
 global $jab;

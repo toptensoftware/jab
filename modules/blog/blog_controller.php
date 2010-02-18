@@ -197,6 +197,8 @@ function accept_comment($articleid, $commentid)
 
 function reject_comment($articleid, $commentid)
 {
+	jabCanUser("review_comments", true);
+
 	// Get the article
 	$article=blog_load_article($articleid);
 	if ($article==null)
@@ -211,6 +213,8 @@ function reject_comment($articleid, $commentid)
 
 function delete_comment($articleid, $commentid)
 {
+	jabCanUser("review_comments", true);
+
 	// Get the article
 	$article=blog_load_article($articleid);
 	if ($article==null)
@@ -226,8 +230,6 @@ function delete_comment($articleid, $commentid)
 function get_rss_feed()
 {
 	global $blog;
-	
-	global $blog;
 	$model['blog']=$blog;
 
 	// Load articles
@@ -237,5 +239,39 @@ function get_rss_feed()
 	jabRenderView("blog_view_rss.php", $model);
 	
 }
+
+function get_export()
+{
+	jabCanUser("export", true);
+
+	global $blog;
+	$model['blog']=$blog;
+
+	// Load articles
+	$model['articles']=blog_load_articles(0, 0x7fffffff);
+	
+	// Render it		
+	jabRenderView("blog_view_export.php", $model);
+	
+}
+
+function import_get()
+{
+	jabCanUser("import", true);
+
+	// Render import upload view
+	jabRenderView("blog_view_import.php", $model);
+}
+
+function import_post()
+{
+	jabCanUser("import", true);
+	
+	blog_import($_FILES['importFile']['tmp_name'], jabRequestParam("dropoldcontent")!="");	
+	
+	// Render import upload view
+	jabRenderView("blog_view_import.php", $model);
+}
+
 
 ?>

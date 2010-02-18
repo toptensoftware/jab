@@ -13,13 +13,13 @@ $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/r
 <?php if (jabCanUser("post")): ?>
 | <a href="/<?php echo $model['blog']['routePrefix']?>/edit/new">New Post</a>
 </p>
-<hr/>
 <?php endif ?>
+<hr />
 
 <div class="blog_article">
 <h2><?php echo htmlspecialchars($article->Title) ?></h2>
 <?php echo $article->Format() ?>
-<p><small>Posted <?php echo date('l, jS F Y', $article->TimeStamp)." at ".date('h:i a', $article->TimeStamp)?></small></p>
+<p><small>Posted <?php echo formatRelativeTime($article->TimeStamp)?></small></p>
 <p>
 <?php 
 
@@ -32,11 +32,6 @@ if ($model['blog']['enableComments'] && function_exists(jabRenderDisqusEditor))
 { 
 	jabRenderDisqusEditor();
 }
-else
-{
-	echo "<a href=\"".$article->FullUrl()."\">Permalink</a>\n";
-}
-
 ?>
 
 </p>
@@ -49,26 +44,29 @@ if ($model['blog']['enableComments'] && !function_exists(jabRenderDisqusLink))
 if (sizeof($article->Comments)>0):
 ?>
 <div class="blog_comments">
-<h3>Comments</h3>
 <? foreach ($article->Comments as $comment): ?>
 
-<div class="blog_comment">
-
 <?php if (jabCanUser("review_comments")): ?>
-<span style="float:right">
-<small>
+<div class="blog_comment_actions">
+<p>
 <?php if ($comment->PendingReview): ?>
 <a href="<?php echo blog_link("/comments/accept/".$article->ID."/".$comment->ID) ?>">[Accept]</a>
 <?php else: ?>
 <a href="<?php echo blog_link("/comments/reject/".$article->ID."/".$comment->ID) ?>">[Reject]</a>
 <?php endif; ?>
 <a href="<?php echo blog_link("/comments/delete/".$article->ID."/".$comment->ID) ?>" onClick="return confirm('Are you sure you want to delete this comment?')">[Delete]</a>
-</small>
-</span>
-
+</p>
+</div>
 <?php endif ?>
+
+<div class="blog_comment">
+<div class="blog_comment_gravatar"><img src="http://www.gravatar.com/avatar/<?php echo md5(strtolower($comment->Email)) ?>?s=60&d=<?php echo urlencode("http://".$_SERVER['HTTP_HOST']."/theme/default_gravatar_image.png")?>" width="60" height="60"></div>
+<div class="blog_comment_content">
+<span style="float:right"><small>Posted <?php echo formatRelativeTime($comment->TimeStamp)?></small></span>
+<p class="blog_comment_title"><?php echo $comment->FormatNameLink() ?> says:</p>
 <?php echo $comment->Format() ?>
-<p><small>Posted <?php echo date('l, jS F Y', $comment->TimeStamp)." at ".date('h:i a', $comment->TimeStamp)?> by <?php echo htmlspecialchars($comment->Name)?></small></p>
+</div>
+<div class="clearer"></div>
 </div>
 
 <?php endforeach; ?>
@@ -90,8 +88,9 @@ if (sizeof($article->Comments)>0):
  
 	<?php jabHtmlHidden("ID", $model['article']->ID) ?>
 	<?php jabHtmlInput("Your Name:", "Name", $model['comment']->Name, "stdfield") ?>
-	<?php jabHtmlInput("Email Address: (optional, not shown)", "Email", $model['comment']->Email, "stdfield") ?>
-	<?php jabHtmlTextArea("Message: (supports some <a href=\"http://michelf.com/projects/php-markdown/extra/\">Markdown Extra</a>)", "Content", $model['comment']->Content, $class="stdtextareafield") ?>
+	<?php jabHtmlInput("Email Address: <small>(optional, not shown, used for <a href=\"http://www.gravatar.com\" target=\"_blank\">Gravatar</a>)</small>", "Email", $model['comment']->Email, "stdfield") ?>
+	<?php jabHtmlInput("Website: <small>(optional, nofollow)</small>", "Website", $model['comment']->Website, "stdfield") ?>
+	<?php jabHtmlTextArea("Message: <small>(supports some <a href=\"http://michelf.com/projects/php-markdown/extra/\" target=\"_blank\">Markdown Extra</a>)</small>", "Content", $model['comment']->Content, $class="stdtextareafield") ?>
 
 	<div class="clearer"></div>
     
