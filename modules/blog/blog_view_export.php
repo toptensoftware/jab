@@ -1,4 +1,8 @@
-<?php $view['masterview']="none"; ?>
+<?php 
+$view['masterview']="none"; 
+Header("Content-type: application/xml");
+Header("Content-disposition: attachment; filename=export.xml");
+?>
 <<?php echo "?" ?>xml version="1.0" encoding="ISO-8859-1"<?php echo "?"?>>
 <blog>
 <?php foreach ($model['articles'] as $article): ?>
