@@ -43,7 +43,7 @@ function fullindex()
 
 function new_post_get()
 {
-	jabCanUser("post", true);
+	jabCanUser("author", true);
 
 	global $blog;
 	$model['blog']=$blog;
@@ -53,7 +53,7 @@ function new_post_get()
 
 function new_post_post()
 {
-	jabCanUser("post", true);
+	jabCanUser("author", true);
 	
 	// Cancel
 	if (jabRequestParam("cancel"))
@@ -82,7 +82,7 @@ function new_post_post()
 
 function edit_post_get($id)
 {
-	jabCanUser("edit", true);
+	jabCanUser("author", true);
 
 	global $blog;
 	$model['blog']=$blog;
@@ -94,7 +94,7 @@ function edit_post_get($id)
 
 function edit_post_post($id)
 {
-	jabCanUser("edit", true);
+	jabCanUser("author", true);
 
 	global $blog;
 	$model['blog']=$blog;
@@ -119,7 +119,7 @@ function edit_post_post($id)
 
 function delete_post_get($id)
 {
-	jabCanUser("delete", true);
+	jabCanUser("author", true);
 
 	global $blog;
 	$model['blog']=$blog;
@@ -131,7 +131,7 @@ function delete_post_get($id)
 
 function delete_post_post($id)
 {
-	jabCanUser("delete", true);
+	jabCanUser("author", true);
 	
 	if (strlen(jabRequestParam("delete"))>0)
 		blog_delete_article($id);
@@ -159,10 +159,18 @@ function view_post_post($id)
 	$model['comment']->IDArticle=$id;
 	$model['article']=blog_load_article($id);
 	$model['preview']=!!jabRequestParam("preview");
+	$model['ReplyTo']=jabRequestParam("ReplyTo");
 	if ($model['comment']->InitFromForm($model['errors']))
 	{
 		if (jabRequestParam("post"))
 		{
+			if (strlen($model['ReplyTo'] && jabCanUser("author")))
+			{
+				$model['to']=$model['ReplyTo'];
+				$model['from']=$blog['notifyEmailFrom'];
+				jabRenderMail("blog_email_commentreplied.php", $model);
+			}
+			
 			$model['comment']->Save();
 			
 			if ($blog['notifyOnComment'])
@@ -181,7 +189,7 @@ function view_post_post($id)
 
 function accept_comment($articleid, $commentid)
 {
-	jabCanUser("review_comments", true);
+	jabCanUser("author", true);
 
 	// Get the article
 	$article=blog_load_article($articleid);
@@ -197,6 +205,8 @@ function accept_comment($articleid, $commentid)
 
 function reject_comment($articleid, $commentid)
 {
+	jabCanUser("author", true);
+
 	// Get the article
 	$article=blog_load_article($articleid);
 	if ($article==null)
@@ -211,6 +221,8 @@ function reject_comment($articleid, $commentid)
 
 function delete_comment($articleid, $commentid)
 {
+	jabCanUser("author", true);
+
 	// Get the article
 	$article=blog_load_article($articleid);
 	if ($article==null)
@@ -226,8 +238,6 @@ function delete_comment($articleid, $commentid)
 function get_rss_feed()
 {
 	global $blog;
-	
-	global $blog;
 	$model['blog']=$blog;
 
 	// Load articles
@@ -237,5 +247,39 @@ function get_rss_feed()
 	jabRenderView("blog_view_rss.php", $model);
 	
 }
+
+function get_export()
+{
+	jabCanUser("author", true);
+
+	global $blog;
+	$model['blog']=$blog;
+
+	// Load articles
+	$model['articles']=blog_load_articles(0, 0x7fffffff);
+	
+	// Render it		
+	jabRenderView("blog_view_export.php", $model);
+	
+}
+
+function import_get()
+{
+	jabCanUser("author", true);
+
+	// Render import upload view
+	jabRenderView("blog_view_import.php", $model);
+}
+
+function import_post()
+{
+	jabCanUser("author", true);
+	
+	blog_import($_FILES['importFile']['tmp_name'], jabRequestParam("dropoldcontent")!="");	
+	
+	// Render import upload view
+	jabRedirect(blog_link(""));
+}
+
 
 ?>

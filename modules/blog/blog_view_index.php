@@ -7,11 +7,11 @@ $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/r
 <p>
 <a href="<?php echo blog_link("/fullindex") ?>">Full Index</a>
 | <a href="<?php echo blog_link("/feed.rss") ?>">RSS Feed</a>
-<?php if (jabCanUser("post")): ?>
+<?php if (jabCanUser("author")): ?>
 | <a href="/<?php echo $model['blog']['routePrefix']?>/edit/new">New Post</a>
 </p>
-<hr/>
 <?php endif ?>
+<hr/>
 
 <?php // ---------------- Article Loop----------------- ?>
 <?php if (sizeof($model['articles'])): ?>
@@ -19,14 +19,11 @@ $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/r
 <?php foreach ($model['articles'] as $article): ?>
 
 <?php // ---------------- Edit Commands ----------------- ?>
-<?php if (jabCanUser("edit") || jabCanUser("delete")): ?>
+<?php if (jabCanUser("author")): ?>
 <span style="float:right">
 <small>
-<?php if (jabCanUser("edit")): ?>
 <a href="/<?php echo $model['blog']['routePrefix']?>/edit/<?php echo $article->ID?>">[Edit]</a>
-<?php endif; if (jabCanUser("delete")): ?>
 <a href="/<?php echo $model['blog']['routePrefix']?>/delete/<?php echo $article->ID?>">[Delete]</a>
-<?php endif; ?>
 </small>
 </span>
 <?php endif ?>
@@ -35,7 +32,7 @@ $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/r
 <div class="blog_article">
 <h2><?php echo htmlspecialchars($article->Title) ?></h2>
 <?php echo $article->Format() ?>
-<p><small>Posted <?php echo date('l, jS F Y', $article->TimeStamp)." at ".date('h:i a', $article->TimeStamp)?></small></p>
+<p><small>Posted <?php echo formatRelativeTime($article->TimeStamp)?></small></p>
 <p>
 <?php
 if (function_exists(jabRenderShareLink))
@@ -51,7 +48,7 @@ if ($model['blog']['enableComments'])
 	}
 	else
 	{
-		echo "<a href=\"".$article->FullUrl()."\">Read or Leave Comments</a>\n";
+		echo "<span class=\"blog_comment_button\"><a href=\"".$article->FullUrl()."\">Read or Leave Comments</a> (".$article->GetCommentCount(jabCanUser("author")).")</span>\n";
 	}
 }
 else
@@ -72,10 +69,10 @@ else
 
 
 <?php // ---------------- Paging ----------------- ?>
-<?php if (isset($model['prevpagelink'])):?>
-<span style="float:left"><a href="<?php echo $model['prevpagelink']?>">&#171; Newer Articles</a></span>
-<?php endif ?>
 <?php if (isset($model['nextpagelink'])):?>
-<span style="float:right"><a href="<?php echo $model['nextpagelink']?>">Older Articles &#187;</a></span>
+<span style="float:left"><a href="<?php echo $model['nextpagelink']?>">&#171; Older Articles</a></span>
+<?php endif ?>
+<?php if (isset($model['prevpagelink'])):?>
+<span style="float:right"><a href="<?php echo $model['prevpagelink']?>">Newer Articles &#187;</a></span>
 <?php endif ?>
 
