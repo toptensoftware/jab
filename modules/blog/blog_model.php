@@ -4,40 +4,44 @@
 
 // Get settings
 $blog['pdo']=new PDO($blog['pdo_dsn'], $blog['pdo_username'], $blog['pdo_password'], $blog['pdo_driveroptions']);
+$blog['pdo']->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 function init_blog_db()
 {
 	// Read schema version
 	global $blog;
-	$blog['pdo']->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
-	$info=$blog['pdo']->query("SELECT * FROM {$blog['tablePrefix']}Info WHERE Name='SchemaVersion'");
-	$blog['pdo']->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-	if ($info===false)
+
+	
+	$schemaVersion=0;
+	try
+	{
+		$info=$blog['pdo']->query("SELECT * FROM {$blog['tablePrefix']}Info WHERE Name='SchemaVersion'");
+		$row=$info->fetch();
+		$schemaVersion=(int)$row['Value'];
+	}
+	catch (PDOException $x)
+	{
+		// Must be new DB
+	}
+
+	if ($schemaVersion==0)
 	{
 		$blog['pdo']->exec(<<<SQL
 					CREATE TABLE {$blog['tablePrefix']}Info(Name, Value);
-SQL
-);
 
-		$blog['pdo']->exec(<<<SQL
 					INSERT INTO {$blog['tablePrefix']}Info(Name, Value) 
-					VALUES ('SchemaVersion', 1);
-SQL
-);
+					VALUES ('SchemaVersion', 2);
 
-		$blog['pdo']->exec(<<<SQL
 					CREATE TABLE {$blog['tablePrefix']}Articles(
 						ID INTEGER PRIMARY KEY AUTOINCREMENT, 
 						Title TEXT, 
 						Timestamp INTEGER, 
 						Content TEXT, 
 						RateTotal INTEGER, 
-						RateCount INTEGER
+						RateCount INTEGER,
+						Draft BOOLEAN DEFAULT(0)
 						);
-SQL
-);
 
-		$blog['pdo']->exec(<<<SQL
 					CREATE TABLE {$blog['tablePrefix']}Comments(
 						ID INTEGER PRIMARY KEY AUTOINCREMENT, 
 						IDArticle INTEGER, 
@@ -49,30 +53,31 @@ SQL
 						PendingReview BOOLEAN,
 						ByAuthor BOOLEAN DEFAULT(0)
 						);
-SQL
-);
 
-		$blog['pdo']->exec(<<<SQL
-					CREATE UNIQUE INDEX {$blog['tablePrefix']}ArticlesIdx 
+					CREATE INDEX {$blog['tablePrefix']}ArticlesIdx 
 						ON {$blog['tablePrefix']}Articles(Timestamp);
-SQL
-);
 
-		$blog['pdo']->exec(<<<SQL
 					CREATE INDEX {$blog['tablePrefix']}CommentsIdx 
 						ON {$blog['tablePrefix']}Comments(IDArticle);
-SQL
-);
 
-		$blog['pdo']->exec(<<<SQL
 					CREATE INDEX {$blog['tablePrefix']}CommentsIdx2 
 						ON {$blog['tablePrefix']}Comments(Timestamp);
 SQL
 );
 	}
-}
 
-init_blog_db();
+	if ($schemaVersion==1)
+	{
+		$blog['pdo']->exec(<<<SQL
+
+			UPDATE {$blog['tablePrefix']}Info SET Value=2 WHERE Name='SchemaVersion'; 
+
+			ALTER TABLE {$blog['tablePrefix']}Articles 
+				ADD COLUMN Draft BOOLEAN DEFAULT(0);
+SQL
+);
+	}
+}
 
 // Look for any links that don't contain a colon and don't start with a slash
 // and prefix with $prefix
@@ -93,6 +98,7 @@ class BlogArticle
 	var $Content;			// Main content of	the article
 	var $RateTotal;
 	var $RateCount;
+	var $Draft;
 	var $Comments;			// Array of comments, populated by BlogArticle->LoadComments()
 	
 	// Constructor
@@ -106,18 +112,23 @@ class BlogArticle
 			$this->Content=$row['Content'];
 			$this->RateTotal=intval($row['RateTotal']);
 			$this->RateCount=intval($row['RateCount']);
+			$this->Draft=(boolean)$row['Draft'];
 		}
 		else
 		{
 			$this->RatingTotal=0;
 			$this->RatingCount=0;
-			$this->TimeStamp=time();
+			$this->TimeStamp=0;
+			$this->Draft=true;
 		}
 	}
 	
-	function InitFromForm(&$errors)
+	function InitFromForm($draft, &$errors)
 	{
 		global $blog;
+		
+		// Store draft flags
+		$this->Draft=$draft;
 		
 		// Handle uploaded files
 		if (isset($blog['uploadfolder']))
@@ -161,17 +172,25 @@ class BlogArticle
 
 		$this->ID=jabRequestParam("ID");
 		$this->Title=jabRequestParam("Title");
-		$this->TimeStamp=strtotime(jabRequestParam("TimeStamp"));
+		$this->TimeStamp=jabRequestParam("TimeStamp")=="" ? 0 : strtotime(jabRequestParam("TimeStamp"));
 		$this->Content=jabRequestParam("Content").$uploadAppend;
+		
+		// Use default time
+		if ($this->TimeStamp==0 && !$this->Draft)
+			$this->TimeStamp=time();
 		
 		if (strlen($this->Title)==0)
 			$errors[]="Please specify a title";
-		if (strlen($this->Content)==0)
-			$errors[]="No article content";
-		if ($this->TimeStamp==null)
+			
+		if (!$draft)
 		{
-			$errors[]="Invalid date/time";
-			$this->TimeStamp=time();
+			if (strlen($this->Content)==0)
+				$errors[]="No article content";
+			if ($this->TimeStamp==null)
+			{
+				$errors[]="Invalid date/time";
+				$this->TimeStamp=time();
+			}
 		}
 			
 		return sizeof($errors)==0;
@@ -221,10 +240,11 @@ class BlogArticle
 		if (strlen($this->ID)==0)
 		{
 			// New article
-			$stmt=$blog['pdo']->prepare("INSERT INTO {$blog['tablePrefix']}Articles(Title, Timestamp, Content) VALUES (:title, :timestamp, :content)");
+			$stmt=$blog['pdo']->prepare("INSERT INTO {$blog['tablePrefix']}Articles(Title, Timestamp, Content, Draft) VALUES (:title, :timestamp, :content, :draft)");
 			$stmt->bindValue(":title", $this->Title);
 			$stmt->bindValue(":timestamp", $this->TimeStamp);
 			$stmt->bindValue(":content", $this->Content);
+			$stmt->bindValue(":draft", $this->Draft);
 			$stmt->execute();
 			$this->ID=$blog['pdo']->lastInsertId();
 			return true;
@@ -232,10 +252,11 @@ class BlogArticle
 		else
 		{
 			// Existing article
-			$stmt=$blog['pdo']->prepare("UPDATE {$blog['tablePrefix']}Articles SET Title=:title, Timestamp=:timestamp, Content=:content WHERE ID=:idArticle");
+			$stmt=$blog['pdo']->prepare("UPDATE {$blog['tablePrefix']}Articles SET Title=:title, Timestamp=:timestamp, Content=:content, Draft=:draft WHERE ID=:idArticle");
 			$stmt->bindValue(":title", $this->Title);
 			$stmt->bindValue(":timestamp", $this->TimeStamp);
 			$stmt->bindValue(":content", $this->Content);
+			$stmt->bindValue(":draft", $this->Draft);
 			$stmt->bindValue(":idArticle", $this->ID);
 			$stmt->execute();
 			return $stmt->rowCount()==1;
@@ -400,10 +421,12 @@ class BlogComment
 };
 
 // Load a single blog article
-function blog_load_article($id)
+function blog_load_article($id, $drafts=false)
 {
+	$cond=$drafts ? "" : " AND Draft<>1";
+
 	global $blog;
-	$stmt=$blog['pdo']->prepare("SELECT * FROM {$blog['tablePrefix']}Articles WHERE ID=:idArticle;");
+	$stmt=$blog['pdo']->prepare("SELECT * FROM {$blog['tablePrefix']}Articles WHERE ID=:idArticle {$cond};");
 	$stmt->bindValue(":idArticle", $id);
 	$stmt->execute();
 	
@@ -417,10 +440,17 @@ function blog_load_article($id)
 }
 
 // Load a page of articles
-function blog_load_articles($page, $pagesize)
+function blog_load_articles($page, $pagesize, $drafts=false)
 {
+	if ($drafts==="all")
+		$cond="";
+	else
+		$cond=$drafts ? "WHERE Draft=1" : " WHERE Draft<>1";
+		
+	$order="Timestamp DESC";
+
 	global $blog;
-	$stmt=$blog['pdo']->prepare("SELECT * FROM {$blog['tablePrefix']}Articles ORDER BY Timestamp DESC LIMIT :limit OFFSET :offset");
+	$stmt=$blog['pdo']->prepare("SELECT * FROM {$blog['tablePrefix']}Articles {$cond} ORDER BY {$order} LIMIT :limit OFFSET :offset");
 	$stmt->bindValue(":offset", $pagesize*$page);
 	$stmt->bindValue(":limit", $pagesize);
 	$stmt->execute();
@@ -517,13 +547,15 @@ SQL
 	{
 		if ($article->getName()=="item")
 		{
-			$stmt=$blog['pdo']->prepare("INSERT INTO {$blog['tablePrefix']}Articles(ID, Title, Timestamp, Content, RateTotal, RateCount) VALUES (:id, :title, :timestamp, :content, :rateTotal, :rateCount)");
+			$stmt=$blog['pdo']->prepare("INSERT INTO {$blog['tablePrefix']}Articles(ID, Title, Timestamp, Content, RateTotal, RateCount, Draft) 
+										 VALUES (:id, :title, :timestamp, :content, :rateTotal, :rateCount, :draft)");
 			$stmt->bindValue(":id", intval($article->id));
 			$stmt->bindValue(":title", $article->title);
 			$stmt->bindValue(":timestamp", intval(strtotime($article->timestamp)));
 			$stmt->bindValue(":content", $article->content);
 			$stmt->bindValue(":rateTotal", intval($article->rateTotal));
 			$stmt->bindValue(":rateCount", intval($article->rateCount));
+			$stmt->bindValue(":draft", intval($article->draft));
 			$stmt->execute();
 			
 			foreach ($article->comments->children() as $comment)

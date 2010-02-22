@@ -8,6 +8,7 @@ $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/r
 <a href="<?php echo blog_link("/fullindex") ?>">Full Index</a>
 | <a href="<?php echo blog_link("/feed.rss") ?>">RSS Feed</a>
 <?php if (jabCanUser("author")): ?>
+| <a href="/<?php echo $model['blog']['routePrefix']?>/drafts">Drafts</a>
 | <a href="/<?php echo $model['blog']['routePrefix']?>/edit/new">New Post</a>
 </p>
 <?php endif ?>

@@ -23,14 +23,17 @@ $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/r
 <form class="mainform" id="theform" method="post" action="<?php echo $_SERVER["REQUEST_URI_CLEAN"]?>" enctype="multipart/form-data"> 
  
 	<?php jabHtmlHidden("ID", $model['article']->ID) ?>
+	<?php jabHtmlHidden("Draft", $model['article']->Draft ? "1" : "0") ?>
 	<?php jabHtmlInput("Title:", "Title", $model['article']->Title, "stdfield") ?>
-	<?php jabHtmlInput("Date/Time:", "TimeStamp", date('d M Y H:i:s', $model['article']->TimeStamp), "stdfield") ?>
+	<?php jabHtmlInput("Date/Time:", "TimeStamp", $model['article']->TimeStamp==0 ? "" : date('d M Y H:i:s', $model['article']->TimeStamp), "stdfield") ?>
 	<?php jabHtmlTextArea("Content: (supports <a href=\"http://michelf.com/projects/php-markdown/extra/\">Markdown Extra</a>)", "Content", $model['article']->Content, $class="stdtextareafield") ?>
 
 	<div class="clearer"></div>
     
-	<?php jabHtmlSubmitButton("Post", "post") ?>
+	<?php jabHtmlSubmitButton("Publish", "post") ?>
+	<?php jabHtmlSubmitButton("Save", "save") ?>
 	<?php jabHtmlSubmitButton("Preview", "preview") ?>
+	<?php jabHtmlSubmitButton($model['article']->Draft ? "Discard" : "Delete", "delete") ?>
 	<?php jabHtmlSubmitButton("Cancel", "cancel") ?>
  
 

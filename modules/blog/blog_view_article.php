@@ -21,10 +21,22 @@ function appendEmail(email)
 | <a href="<?php echo blog_link("/fullindex") ?>">Full Index</a>
 | <a href="<?php echo blog_link("/feed.rss") ?>">RSS Feed</a> 
 <?php if (jabCanUser("author")): ?>
+| <a href="/<?php echo $model['blog']['routePrefix']?>/drafts">Drafts</a>
 | <a href="/<?php echo $model['blog']['routePrefix']?>/edit/new">New Post</a>
 </p>
 <?php endif ?>
 <hr />
+
+<?php // ---------------- Edit Commands ----------------- ?>
+<?php if (jabCanUser("author")): ?>
+<span style="float:right">
+<small>
+<a href="/<?php echo $model['blog']['routePrefix']?>/edit/<?php echo $article->ID?>">[Edit]</a>
+<a href="/<?php echo $model['blog']['routePrefix']?>/delete/<?php echo $article->ID?>">[Delete]</a>
+</small>
+</span>
+<?php endif ?>
+
 
 <div class="blog_article">
 <h2><?php echo htmlspecialchars($article->Title) ?></h2>

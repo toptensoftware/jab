@@ -441,6 +441,19 @@ function jabLogout()
 	unset($_SESSION['jab_userrights']);
 }
 
+// Dump a variable
+function jabDump(&$var)
+{
+	echo "<pre>";
+	var_dump($var);
+	echo "</pre>";
+}
+
+function dd(&$var)
+{
+	jabDump($var);
+	die;
+}
 
 /*
 include_once('geshi.php')
