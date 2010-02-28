@@ -1,9 +1,72 @@
 <?php
 jabRequire("forms");
 $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/rss+xml\" title=\"Get RSS 2.0 Feed\" href=\"".blog_link("/feed.rss")."\" />\n";
+$view['additional_head_tags'].="    <script type=\"text/javascript\" src=\"/js/jquery.js\"></script>\n";
+$view['additional_head_tags'].="    <script type=\"text/javascript\" src=\"/js/jQuery.timers.js\"></script>\n";
 ?>
 <h1><?php echo htmlspecialchars($model['blog']['title']) ?></h1>
 <h2><?php echo htmlspecialchars($model['blog']['description']) ?></h2>
+
+<script type="text/javascript">
+<!--
+$(document).ready(
+	function()
+	{
+		if ($('#Draft').attr('value')=="1")
+		{
+			$('#Content').keypress(postChanged)
+			$('#Title').keypress(postChanged)
+			$('#TimeStamp').keypress(postChanged)
+			$('#save').attr('disabled', true);
+			$('#save').attr('value', 'Saved');
+			$('#autosave').text("Auto-save enabled.");
+		}
+		else
+		{
+			$('#autosave').text("Auto-save disabled for posted articles.");
+		}
+	}
+)
+
+function postChanged()
+{
+	$('#save').attr('disabled', false);
+	$('#save').attr('value', 'Save Now');
+	$(document).stopTime();
+	$(document).oneTime(1000, 
+		function()
+		{
+			saveDocument();
+		}
+	);
+}
+
+function saveDocument()
+{
+	$('#save').attr('disabled', true);
+	$('#save').attr('value', 'Saving');
+	
+	var data=$('#theform').serializeArray();
+	$.post($(document).attr("location")+"?autosave=1", data, 
+		function(result)
+		{
+			if (result=="OK")
+			{
+				$('#save').attr('disabled', true);
+				$('#save').attr('value', 'Saved');
+			}
+			else
+			{
+				$('#save').attr('disabled', false);
+				$('#save').attr('value', 'Save Now');
+				alert("Auto save failed with " + result);
+			}
+		}
+	);
+}
+
+-->
+</script>
 
 <?php // ---------------- Heading ----------------- ?>
 <h2><?php echo $model['article']->ID==0 ? "Post New" : "Edit"?> Article</h2>
@@ -36,6 +99,7 @@ $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/r
 	<?php jabHtmlSubmitButton($model['article']->Draft ? "Discard" : "Delete", "delete") ?>
 	<?php jabHtmlSubmitButton("Cancel", "cancel") ?>
  
+	<small id="autosave">Auto-save disabled due to lack of scripting support.</small>
 
 <?php // ---------------- File Upload----------------- ?>
 
@@ -57,7 +121,6 @@ $view['additional_head_tags'].="    <link rel=\"alternate\" type=\"application/r
 <?php endif; ?>
 
 </form> 
-
 
 <?php // ---------------- Initialize focus ----------------- ?>
 <?php if (strlen($model['article']->Title)==0): ?>

@@ -58,43 +58,40 @@ function drafts()
 
 function new_post()
 {
-	return get_post(0);
+	$article=new BlogArticle();
+	$article->Title="Untitled Article";
+	$article->Draft=true;
+	$article->Save();
+	
+	jabRedirect(blog_link("/edit/".$article->ID));
 }
 
-function get_post($id)
+function edit_article_get($id)
 {
 	jabCanUser("author", true);
 
 	global $blog;
 	$model['blog']=$blog;
-	$model['article']=$id==0 ? new BlogArticle() : blog_load_article($id, true);
+	$model['article']=blog_load_article($id, true);
 	if ($model['article']==null)
 		return false;
+		
 	jabRenderView("blog_view_editarticle.php", $model);
 }
 
-function edit_post_new()
+function edit_article_post($id)
 {
-	return edit_post(0);
-}
+	global $blog;
 
-function edit_post($id)
-{
 	jabCanUser("author", true);
-
-	// Cancel
+	
+	// Cancel?
 	if (jabRequestParam("cancel"))
 	{
 		return jabRedirect(jabRequestParam("Draft")==1 ? blog_link("/drafts") : blog_link("/"));
 	}
 		
-	global $blog;
-	$model['blog']=$blog;
-	$model['article']=$id==0 ? new BlogArticle() : blog_load_article($id, true);
-	if ($model['article']==null)
-		return false;
-	
-	// Delete button?	
+	// Delete?
 	if (jabRequestParam("delete"))
 	{
 		if ($id==0)
@@ -106,15 +103,34 @@ function edit_post($id)
 			jabRedirect(blog_link("/delete/".$id));
 		}
 	}
-		
-	if ($model['article']->InitFromForm(!!jabRequestParam("save"), $model['errors']))
+	
+	$model['blog']=$blog;
+	$model['article']=blog_load_article($id, true);
+	if ($model['article']==null)
+		return false;
+	
+	$save=!!jabRequestParam("save");
+	$post=!!jabRequestParam("post");
+	$auto=jabRequestParam("autosave")=="1";
+
+	if ($model['article']->InitFromForm($save || $auto, $auto, $model['errors']))
 	{
-		if (jabRequestParam("post") || jabRequestParam("save"))
+		if ($auto)
+		{
+			if ($model['article']->Save())
+				echo "OK";
+			else
+				echo "Failed";
+			die;
+		}
+		
+		if ($post || $save)
 		{
 			if ($model['article']->Save())
 			{
 				jabRedirect(blog_link($model['article']->Draft ? "/drafts" : "/"));
 			}
+
 			$model['errors'][]="Failed to write DB record ".$model['article']->ID;
 		}
 	}
@@ -153,6 +169,7 @@ function view_post_get($id)
 	
 	if ($model['article']==null)
 		return false;
+
 	$model['comment']=new BlogComment();
 	jabRenderView("blog_view_article.php", $model);
 }
@@ -166,6 +183,7 @@ function view_post_post($id)
 	$model['article']=blog_load_article($id, jabCanUser("author"));
 	$model['preview']=!!jabRequestParam("preview");
 	$model['ReplyTo']=jabRequestParam("ReplyTo");
+
 	if ($model['comment']->InitFromForm($model['errors']))
 	{
 		if (jabRequestParam("post"))

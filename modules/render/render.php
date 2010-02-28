@@ -241,6 +241,8 @@ $jab['contentTypes']=array(
 	"zip"=>"application/octet-stream",
 	"ico"=>"application/octet-stream",
 	"pdf"=>"application/pdf",
+	"js"=>"text/javascript",
+	"txt"=>"text/plain",
 	);
 		
 

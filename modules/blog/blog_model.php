@@ -23,6 +23,8 @@ function init_blog_db()
 	{
 		// Must be new DB
 	}
+	
+	$blog['pdo']->beginTransaction();
 
 	if ($schemaVersion==0)
 	{
@@ -66,7 +68,7 @@ SQL
 );
 	}
 
-	if ($schemaVersion==1)
+	if ($schemaVersion<2)
 	{
 		$blog['pdo']->exec(<<<SQL
 
@@ -77,6 +79,10 @@ SQL
 SQL
 );
 	}
+
+	
+	$blog['pdo']->commit();
+
 }
 
 // Look for any links that don't contain a colon and don't start with a slash
@@ -123,7 +129,7 @@ class BlogArticle
 		}
 	}
 	
-	function InitFromForm($draft, &$errors)
+	function InitFromForm($draft, $auto, &$errors)
 	{
 		global $blog;
 		
@@ -170,7 +176,6 @@ class BlogArticle
 		}
 					
 
-		$this->ID=jabRequestParam("ID");
 		$this->Title=jabRequestParam("Title");
 		$this->TimeStamp=jabRequestParam("TimeStamp")=="" ? 0 : strtotime(jabRequestParam("TimeStamp"));
 		$this->Content=jabRequestParam("Content").$uploadAppend;
@@ -178,14 +183,17 @@ class BlogArticle
 		// Use default time
 		if ($this->TimeStamp==0 && !$this->Draft)
 			$this->TimeStamp=time();
-		
+
 		if (strlen($this->Title)==0)
 			$errors[]="Please specify a title";
 			
-		if (!$draft)
+		if (!$draft && !$auto)
 		{
 			if (strlen($this->Content)==0)
+			{
 				$errors[]="No article content";
+			}
+				
 			if ($this->TimeStamp==null)
 			{
 				$errors[]="Invalid date/time";
@@ -237,6 +245,7 @@ class BlogArticle
 	function Save()
 	{
 		global $blog;
+		
 		if (strlen($this->ID)==0)
 		{
 			// New article
@@ -247,10 +256,11 @@ class BlogArticle
 			$stmt->bindValue(":draft", $this->Draft);
 			$stmt->execute();
 			$this->ID=$blog['pdo']->lastInsertId();
-			return true;
 		}
 		else
 		{
+			$blog['pdo']->beginTransaction();
+			
 			// Existing article
 			$stmt=$blog['pdo']->prepare("UPDATE {$blog['tablePrefix']}Articles SET Title=:title, Timestamp=:timestamp, Content=:content, Draft=:draft WHERE ID=:idArticle");
 			$stmt->bindValue(":title", $this->Title);
@@ -259,8 +269,13 @@ class BlogArticle
 			$stmt->bindValue(":draft", $this->Draft);
 			$stmt->bindValue(":idArticle", $this->ID);
 			$stmt->execute();
-			return $stmt->rowCount()==1;
+			
+			// Commit all changes
+			$blog['pdo']->commit();
+			
 		}
+		
+		return true;
 	}
 	
 	// Load comments
@@ -468,6 +483,8 @@ function blog_delete_article($id)
 {
 	global $blog;
 	
+	$article=blog_load_article($id, true);
+	
 	$blog['pdo']->beginTransaction();
 	
 	$stmt=$blog['pdo']->prepare("DELETE FROM {$blog['tablePrefix']}Articles WHERE ID=:idArticle");
@@ -477,7 +494,7 @@ function blog_delete_article($id)
 	$stmt=$blog['pdo']->prepare("DELETE FROM {$blog['tablePrefix']}Comments WHERE IDArticle=:idArticle");
 	$stmt->bindValue(":idArticle", $id);
 	$stmt->execute();
-	
+
 	$blog['pdo']->commit();
 }
 
