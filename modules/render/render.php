@@ -129,6 +129,7 @@ function jabRenderPartialView($file, &$model, $renderContext="partial")
 		
 		// Render it
 		include($file);
+		
 				
 		// Auto close markdown blocks
 		while ($jab['markdown_depth']>0)
@@ -142,7 +143,10 @@ function jabRenderPartialView($file, &$model, $renderContext="partial")
 		
 		// End buffering
 		ob_end_clean();
-
+	}
+	else
+	{
+		throw new Exception("Unknown view extension for view '".$file."'");
 	}
 
 	// Use a masterview?		

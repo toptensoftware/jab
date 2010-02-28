@@ -579,17 +579,24 @@ SQL
 			{
 				if ($comment->getName()=="comment")
 				{
-					$stmt=$blog['pdo']->prepare("INSERT INTO {$blog['tablePrefix']}Comments(ID, IDArticle, Name, Email, Website, Content, PendingReview, ByAuthor, TimeStamp) VALUES (:id, :idarticle, :name, :email, :website, :content, :pendingreview, :byauthor, :timestamp)");
-					$stmt->bindValue(":id", intval($comment->id));
-					$stmt->bindValue(":idarticle", intval($article->id));
-					$stmt->bindValue(":name", $comment->name);
-					$stmt->bindValue(":email", $comment->email);
-					$stmt->bindValue(":website", $comment->website);
-					$stmt->bindValue(":content", $comment->content);
-					$stmt->bindValue(":pendingreview", intval($comment->pending));
-					$stmt->bindValue(":byauthor", intval($comment->byauthor));
-					$stmt->bindValue(":timestamp", intval(strtotime($comment->timestamp)));
-					$stmt->execute();
+					try
+					{
+						$stmt=$blog['pdo']->prepare("INSERT INTO {$blog['tablePrefix']}Comments(ID, IDArticle, Name, Email, Website, Content, PendingReview, ByAuthor, TimeStamp) VALUES (:id, :idarticle, :name, :email, :website, :content, :pendingreview, :byauthor, :timestamp)");
+						$stmt->bindValue(":id", intval($comment->id));
+						$stmt->bindValue(":idarticle", intval($article->id));
+						$stmt->bindValue(":name", $comment->name);
+						$stmt->bindValue(":email", $comment->email);
+						$stmt->bindValue(":website", $comment->website);
+						$stmt->bindValue(":content", $comment->content);
+						$stmt->bindValue(":pendingreview", intval($comment->pending));
+						$stmt->bindValue(":byauthor", intval($comment->byauthor));
+						$stmt->bindValue(":timestamp", intval(strtotime($comment->timestamp)));
+						$stmt->execute();
+					}
+					catch (Exception $e)
+					{
+						throw new Exception("Error inserting comment ".intval($comment->id)." + ".intval($article->id));
+					}
 				}
 			}
 		

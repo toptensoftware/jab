@@ -22,6 +22,7 @@ function jabRouteBlog($blog)
 	jabRoute("get", $blog['routePrefix']."/comments/reject/{articleid}/{commentid}", "blog_controller.php", "reject_comment", $blog);
 	jabRoute("get", $blog['routePrefix']."/comments/delete/{articleid}/{commentid}", "blog_controller.php", "delete_comment", $blog);
 	jabRoute("get", $blog['routePrefix']."/feed.rss", "blog_controller.php", "get_rss_feed", $blog);
+	jabRoute("get", $blog['routePrefix']."/index.rss", "blog_controller.php", "get_rss_feed", $blog);
 	jabRoute("get", $blog['routePrefix']."/export", "blog_controller.php", "get_export", $blog);
 	jabRoute("get;post", $blog['routePrefix']."/import", "blog_controller.php", "import_{httpmethod}", $blog);
 	jabRoute("get", $blog['routePrefix']."/upgrade", "blog_controller.php", "upgrade", $blog);
