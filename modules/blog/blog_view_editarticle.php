@@ -33,7 +33,7 @@ function postChanged()
 	$('#save').attr('disabled', false);
 	$('#save').attr('value', 'Save Now');
 	$(document).stopTime();
-	$(document).oneTime(1000, 
+	$(document).oneTime(30000, 
 		function()
 		{
 			saveDocument();

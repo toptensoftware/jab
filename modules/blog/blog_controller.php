@@ -59,7 +59,6 @@ function drafts()
 function new_post()
 {
 	$article=new BlogArticle();
-	$article->Title="Untitled Article";
 	$article->Draft=true;
 	$article->Save();
 	
@@ -113,29 +112,42 @@ function edit_article_post($id)
 	$post=!!jabRequestParam("post");
 	$auto=jabRequestParam("autosave")=="1";
 
-	if ($model['article']->InitFromForm($save || $auto, $auto, $model['errors']))
-	{
-		if ($auto)
-		{
-			if ($model['article']->Save())
-				echo "OK";
-			else
-				echo "Failed";
-			die;
-		}
-		
-		if ($post || $save)
-		{
-			if ($model['article']->Save())
-			{
-				jabRedirect(blog_link($model['article']->Draft ? "/drafts" : "/"));
-			}
+	// Get settings from form
+	$bErrors=!$model['article']->InitFromForm($post, $model['errors']);
 
-			$model['errors'][]="Failed to write DB record ".$model['article']->ID;
-		}
+	// If preview, we're done
+	if (jabRequestParam("preview"))
+	{
+		$model['preview']=true;
+		jabRenderView("blog_view_editarticle.php", $model);
 	}
 
-	$model['preview']=!!jabRequestParam("preview");
+	// If auto mode, just save and be done
+	if ($auto)
+	{
+		if (!$bErrors && $model['article']->Save())
+			echo "OK";
+		else
+			echo "Failed";
+		die;
+	}
+
+	// Quit if errors
+	if ($bErrors)
+	{	
+		jabRenderView("blog_view_editarticle.php", $model);
+	}
+
+	// Store draft flag
+	$model['article']->Draft=$save;
+	
+	// Save it
+	if ($model['article']->Save())
+	{
+		jabRedirect(blog_link($model['article']->Draft ? "/drafts" : "/"));
+	}
+
+	$model['errors'][]="Failed to write DB record ".$model['article']->ID;
 	jabRenderView("blog_view_editarticle.php", $model);
 }
 

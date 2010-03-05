@@ -80,6 +80,18 @@ SQL
 );
 	}
 
+	if ($schemaVersion<3)
+	{
+		$blog['pdo']->exec(<<<SQL
+
+			UPDATE {$blog['tablePrefix']}Info SET Value=3 WHERE Name='SchemaVersion'; 
+			
+			CREATE INDEX {$blog['tablePrefix']}ArticlesIdx 
+				ON {$blog['tablePrefix']}Articles(Timestamp);
+SQL
+);
+	}
+
 	
 	$blog['pdo']->commit();
 
@@ -129,12 +141,9 @@ class BlogArticle
 		}
 	}
 	
-	function InitFromForm($draft, $auto, &$errors)
+	function InitFromForm($checkErrors, &$errors)
 	{
 		global $blog;
-		
-		// Store draft flags
-		$this->Draft=$draft;
 		
 		// Handle uploaded files
 		if (isset($blog['uploadfolder']))
@@ -180,15 +189,13 @@ class BlogArticle
 		$this->TimeStamp=jabRequestParam("TimeStamp")=="" ? 0 : strtotime(jabRequestParam("TimeStamp"));
 		$this->Content=jabRequestParam("Content").$uploadAppend;
 		
-		// Use default time
-		if ($this->TimeStamp==0 && !$this->Draft)
-			$this->TimeStamp=time();
-
-		if (strlen($this->Title)==0)
-			$errors[]="Please specify a title";
-			
-		if (!$draft && !$auto)
+		if (!$checkErrors)
 		{
+			if (strlen($this->Title)==0)
+			{
+				$errors[]="Please specify a title";
+			}
+				
 			if (strlen($this->Content)==0)
 			{
 				$errors[]="No article content";
@@ -245,6 +252,16 @@ class BlogArticle
 	function Save()
 	{
 		global $blog;
+		
+		// Use default time
+		if ($this->TimeStamp==0 && !$this->Draft)
+			$this->TimeStamp=time();
+			
+		// Setup a title
+		if (strlen($this->Title)==0)
+		{
+			$this->Title="Untitled - ".date("j F, Y");
+		}
 		
 		if (strlen($this->ID)==0)
 		{
