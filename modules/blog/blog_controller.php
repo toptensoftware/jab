@@ -188,6 +188,13 @@ function view_post_get($id)
 
 function view_post_post($id)
 {
+	jabRequire("captcha");
+
+	// Check recapture OK
+	$error=jabCheckCaptcha();
+	if ($error!==true)
+		$model['errors'][]=$error;
+
 	global $blog;
 	$model['blog']=$blog;
 	$model['comment']=new BlogComment();
@@ -198,7 +205,7 @@ function view_post_post($id)
 
 	if ($model['comment']->InitFromForm($model['errors']))
 	{
-		if (jabRequestParam("post"))
+		if (sizeof($model['errors']==0 && jabRequestParam("post")))
 		{
 			if (strlen($model['ReplyTo'] && jabCanUser("author")))
 			{

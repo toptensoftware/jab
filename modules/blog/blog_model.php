@@ -249,6 +249,11 @@ class BlogArticle
 		return blog_link("/posts/".$this->ID."/".$this->UrlTitle());
 	}
 	
+	function Guid()
+	{
+		return blog_link("/guid/".$this->ID);
+	}
+	
 	function Save()
 	{
 		global $blog;

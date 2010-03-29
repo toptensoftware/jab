@@ -9,7 +9,7 @@ Header("Content-disposition: attachment; filename=export.xml");
 	<item>
 		<id><?php echo htmlspecialchars($article->ID)?></id>
 		<title><?php echo htmlspecialchars($article->Title)?></title>
-		<timestamp><?php echo date("D, j M Y G:i:s", $article->TimeStamp)?> GMT.</timestamp>
+		<timestamp><?php echo date("D, j M Y G:i:s", $article->TimeStamp)?> GMT</timestamp>
 		<rateTotal><?php echo $article->RateTotal ?></rateTotal>
 		<rateCount><?php echo $article->RateCount?></rateCount>
 		<draft><?php echo $article->Draft==1 ? "1" : "0" ?></draft>
@@ -26,7 +26,7 @@ foreach ($article->Comments as $comment):
 				<website><?php echo htmlspecialchars($comment->Website) ?></website>
 				<pending><?php echo $comment->PendingReview?></pending>
 				<byauthor><?php echo $comment->ByAuthor?></byauthor>
-				<timestamp><?php echo date("D, j M Y G:i:s", $comment->TimeStamp)?> GMT.</timestamp>
+				<timestamp><?php echo date("D, j M Y G:i:s", $comment->TimeStamp)?> GMT</timestamp>
 				<content><?php echo htmlspecialchars($comment->Content) ?></content>
 			</comment>
 <?php endforeach; ?>
