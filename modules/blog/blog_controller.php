@@ -110,11 +110,11 @@ function edit_article_post($id)
 	
 	$save=!!jabRequestParam("save");
 	$post=!!jabRequestParam("post");
-	$auto=jabRequestParam("autosave")=="1";
-
+	$ajax=jabRequestParam("ajax")=="1";
+	
 	// Get settings from form
 	$bErrors=!$model['article']->InitFromForm($post, $model['errors']);
-
+	
 	// If preview, we're done
 	if (jabRequestParam("preview"))
 	{
@@ -122,8 +122,8 @@ function edit_article_post($id)
 		jabRenderView("blog_view_editarticle.php", $model);
 	}
 
-	// If auto mode, just save and be done
-	if ($auto)
+	// If ajax mode, just save and be done
+	if ($ajax)
 	{
 		if (!$bErrors && $model['article']->Save())
 			echo "OK";

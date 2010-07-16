@@ -23,7 +23,7 @@ if (sizeof($model['articles']))
 	{
 		// Output paragraph
 		echo "<p><a href=\"".$article->FullUrl()."\">[view]</a> - ";
-		echo "<a href=\"".blog_link("/edit/".$article->ID)."\">".htmlspecialchars($article->Title)."</a></p>";
+		echo "<a href=\"".blog_link("/edit/".$article->ID)."\">".htmlspecialchars($article->Title ? $article->Title : "Untitled")."</a></p>";
 		
 	}
 }

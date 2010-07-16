@@ -189,7 +189,7 @@ class BlogArticle
 		$this->TimeStamp=jabRequestParam("TimeStamp")=="" ? 0 : strtotime(jabRequestParam("TimeStamp"));
 		$this->Content=jabRequestParam("Content").$uploadAppend;
 		
-		if (!$checkErrors)
+		if ($checkErrors)
 		{
 			if (strlen($this->Title)==0)
 			{
@@ -200,12 +200,14 @@ class BlogArticle
 			{
 				$errors[]="No article content";
 			}
-				
+			
+			/*
 			if ($this->TimeStamp==null)
 			{
 				$errors[]="Invalid date/time";
 				$this->TimeStamp=time();
 			}
+			*/
 		}
 			
 		return sizeof($errors)==0;
@@ -263,7 +265,7 @@ class BlogArticle
 			$this->TimeStamp=time();
 			
 		// Setup a title
-		if (strlen($this->Title)==0)
+		if (strlen($this->Title)==0 && !$this->Draft)
 		{
 			$this->Title="Untitled - ".date("j F, Y");
 		}

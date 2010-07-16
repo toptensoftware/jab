@@ -14,52 +14,55 @@ $(document).ready(
 	{
 		if ($('#Draft').attr('value')=="1")
 		{
-			$('#Content').keypress(postChanged)
-			$('#Title').keypress(postChanged)
-			$('#TimeStamp').keypress(postChanged)
-			$('#save').attr('disabled', true);
-			$('#save').attr('value', 'Saved');
-			$('#autosave').text("Auto-save enabled.");
-		}
-		else
-		{
-			$('#autosave').text("Auto-save disabled for posted articles.");
+			$('#Content').keypress(postChanged);
+			$('#Title').keypress(postChanged);
+			$('#TimeStamp').keypress(postChanged);
+			$('#Content').bind("paste", postChanged);
+			$('#Title').bind("paste", postChanged);
+			$('#TimeStamp').bind("paste", postChanged);
+			$('#Content').bind("input", postChanged);
+			$('#Title').bind("input", postChanged);
+			$('#TimeStamp').bind("input", postChanged);
+			$('#save_now').click(saveDocument);
 		}
 	}
 )
 
 function postChanged()
 {
-	$('#save').attr('disabled', false);
-	$('#save').attr('value', 'Save Now');
-	$(document).stopTime();
-	$(document).oneTime(30000, 
-		function()
-		{
-			saveDocument();
-		}
-	);
+	if ($('#save_now').length!=0)
+	{
+		$('#save_now').attr('disabled', false);
+		$('#save_now').attr('value', 'Save and Continue');
+		$(document).stopTime();
+		$(document).oneTime(30000, 
+			function()
+			{
+				saveDocument();
+			}
+		);
+	}
 }
 
 function saveDocument()
 {
-	$('#save').attr('disabled', true);
-	$('#save').attr('value', 'Saving');
+	$('#save_now').attr('disabled', true);
+	$('#save_now').attr('value', 'Saving');
 	
 	var data=$('#theform').serializeArray();
-	$.post($(document).attr("location")+"?autosave=1", data, 
+	$.post($(document).attr("location")+"?ajax=1", data, 
 		function(result)
 		{
 			if (result=="OK")
 			{
-				$('#save').attr('disabled', true);
-				$('#save').attr('value', 'Saved');
+				$('#save_now').attr('disabled', true);
+				$('#save_now').attr('value', 'Saved');
 			}
 			else
 			{
-				$('#save').attr('disabled', false);
-				$('#save').attr('value', 'Save Now');
-				alert("Auto save failed with " + result);
+				$('#save_now').attr('disabled', false);
+				$('#save_now').attr('value', 'Save and Continue');
+				alert("Failed to save changes - " + result);
 			}
 		}
 	);
@@ -93,14 +96,27 @@ function saveDocument()
 
 	<div class="clearer"></div>
     
-	<?php jabHtmlSubmitButton("Publish", "post") ?>
-	<?php jabHtmlSubmitButton("Save", "save") ?>
-	<?php jabHtmlSubmitButton("Preview", "preview") ?>
-	<?php jabHtmlSubmitButton($model['article']->Draft ? "Discard" : "Delete", "delete") ?>
-	<?php jabHtmlSubmitButton("Cancel", "cancel") ?>
+<?php
+	if ($model['article']->Draft)
+	{
+		jabHtmlButton("Save and Continue", "save_now");
+		jabHtmlSubmitButton("Save and Close", "save");
+		jabHtmlSubmitButton("Preview", "preview");
+		jabHtmlSubmitButton("Publish", "post");
+		jabHtmlSubmitButton("Discard", "delete");
+	}
+	else
+	{
+		jabHtmlSubmitButton("Preview", "preview");
+		jabHtmlSubmitButton("Publish Changes", "post");
+		jabHtmlSubmitButton("Revert to Draft", "save");
+		jabHtmlSubmitButton("Delete", "delete");
+	}
+	
+	jabHtmlSubmitButton("Cancel", "cancel");
+	
+?>
  
-	<small id="autosave">Auto-save disabled due to lack of scripting support.</small>
-
 <?php // ---------------- File Upload----------------- ?>
 
 	<?php if (isset($model['blog']['uploadfolder'])): ?>

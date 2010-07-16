@@ -56,6 +56,16 @@ function jabHtmlSubmitButton($caption, $id, $class="", $name="")
 	echo "<input type=\"submit\" id=\"$id\" name=\"$name\" value=\"$caption\"/>\n";
 }
 
+// Render a HTML submit button
+function jabHtmlButton($caption, $id, $class="", $name="")
+{
+	if ($name=="")
+		$name=$id;
+	if ($class!="")
+		$class=" class=\"".$class."\"";
+	echo "<input type=\"button\" id=\"$id\" name=\"$name\" value=\"$caption\"/>\n";
+}
+
 // Render a HTML text input with label
 function jabHtmlHidden($name, $value)
 {
